@@ -144,7 +144,7 @@ bool SchedulerNode::process_messages(){
 					}
 				return true;
 				}		
-			}
+			}//we should look all messages for subscriptors
 			_messages._messages_ready_to_send.add(_messages._messages_without_read.get(0));
 			_messages._messages_without_read.remove(0);
 			return true;			
