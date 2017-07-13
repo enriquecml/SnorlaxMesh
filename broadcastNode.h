@@ -24,6 +24,8 @@ private:
   uint32_t _chip_id;
 
   //void createSchedule(unsigned long pointTime,unsigned long next_time_receive,unsigned long duration_time_receive,unsigned long period_receive,String &sJSON);
+	WiFiClient _client;
+	WiFiServer _server;
 
 
 public:

@@ -1,6 +1,6 @@
 #include "messageBroker.h"
 
-  void int_to_cero(int *flag){
+  void ICACHE_RAM_ATTR int_to_cero(int *flag){
 	  *flag=0;
   }
   
@@ -161,7 +161,9 @@ bool messageBroker::wasHere(String sJson,String ssid){
   root["n_ids"]=n_ids;  
   
   sJson=String("");
-  root.printTo(sJson); 	  
+  root.printTo(sJson);
+  DEBUG_MSG("Nodo agregado resultado:\n");
+  Serial.println(sJson);
   }
 
 unsigned long distance(unsigned long a,unsigned long b){
@@ -173,16 +175,16 @@ unsigned long distance(unsigned long a,unsigned long b){
 	return distance;
 }  
   
-void messageBroker::updateAP(String name_node,unsigned long time_saw,unsigned long max_range,unsigned long min_range){
+void messageBroker::updateAP(String name_node,unsigned long time_saw,bool scan,unsigned long max_range,unsigned long min_range){
 	int position=givePositionNode(name_node);
 	if(position!=-1){
 		unsigned long d=distance(APs.get(position)->time_saw,time_saw);
 		if(d<=max_range){
-			APs.get(position)->uncertainty=substract(min_range,d);
+			APs.get(position)->uncertainty=substract(max_range,d);
 		}
 		else{
 			APs.get(position)->time_saw=time_saw;
-			APs.get(position)->uncertainty=min_range;			
+			APs.get(position)->uncertainty=max_range;			
 		}
 	}
 	else{
@@ -190,7 +192,7 @@ void messageBroker::updateAP(String name_node,unsigned long time_saw,unsigned lo
 		aux = new AP();
 		aux->ssid=String(name_node);
 		aux->time_saw=time_saw;
-		aux->uncertainty=min_range;		
+		aux->uncertainty=max_range;		
 		APs.add(aux);		
 	}
 	lostConnectionWithAP=false;
@@ -271,7 +273,7 @@ void messageBroker::incrementTry(String ssid){
 	int position= givePositionNode(ssid);
 	AP * aux=APs.get(position);
 	aux->nTry++;
-	if(aux->nTry>2){
+	if(aux->nTry>5){
 		delete(aux);//Eliminate node not accesible
 		APs.remove(position);
 		lostConnectionWithAP=true;

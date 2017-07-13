@@ -5,7 +5,7 @@
 #include "PubBase.h"
 #include "SubBase.h"
 #include "SingletonStats.h"
-
+enum States{NONE,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
 class SchedulerNode{
 
 private:
@@ -29,6 +29,7 @@ private:
     String ssid_to_send;
 
 	bool scanning;
+	unsigned long total_time_scanned;
 	unsigned long total_time_scanning;
 	
 	broadcastNode node;
@@ -38,6 +39,11 @@ private:
 	int position_publicator_generate;
 	
 	LinkedList<SubBase*> subscriptors;
+	void advise();
+	void scan();
+	void send();
+	
+bool subscriptors_read_messages();	
 	
 public:
 
