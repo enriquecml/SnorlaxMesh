@@ -40,8 +40,6 @@
 }
   
   bool SubBase::read(String sJson){
-	
-  WiFi.mode(WIFI_STA);
 
   WiFi.begin(String("MOVISTAR_0234").c_str(), String("85C4117DAA30EFFEF5D4").c_str());
   

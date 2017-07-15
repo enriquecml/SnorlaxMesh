@@ -1,8 +1,13 @@
 #include "messageBroker.h"
 
-  void ICACHE_RAM_ATTR int_to_cero(int *flag){
+  void ICACHE_RAM_ATTR int_to_cero(volatile int *flag){
 	  *flag=0;
   }
+  
+    void ICACHE_RAM_ATTR int_to_cero( int *flag){
+	  *flag=0;
+  }
+  
   
   unsigned long globalTime(unsigned long time){
 	return time+millis();  
@@ -303,7 +308,9 @@ void messageBroker::nextTimeSend(String &ssid,unsigned long &time_next_send,unsi
 		time_next_send=substract(time_saw,millis());		
 	}
 	else{
-		time_next_send=period_ms-((millis()-time_saw)%period_ms);		
+		time_next_send=period_ms-((millis()-time_saw)%period_ms);
+			if(time_next_send<100)//little time now, then put the next period
+				time_next_send+=period_ms;
 	}
 if(0!=random(APs.get(positionAP)->rate))
 	duration_send=0;

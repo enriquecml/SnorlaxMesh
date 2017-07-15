@@ -28,9 +28,11 @@ broadcastNode::broadcastNode():_server(SERVER_PORT)
       }
     }
 	}
+	WiFi.disconnect(true);
+	
   }
   
-void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messages,String ssid){
+void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messages,String & ssid){
 	 SingletonStats::instance()->n_try_connections++;
   	Ticker t;	
 	int in = 1;
@@ -40,25 +42,29 @@ void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messa
 	bool sent=false;
 	bool connected=false;
 	bool sent_rate=false;
-	String sip=String(SERVER_IP_ADDR);
+	IPAddress ip(192, 168, 4, 1);
+	//String sip=String(SERVER_IP_ADDR);
 	while(in && !sent){
 		switch(state){
 			case 0:
-
 				_client.setNoDelay(true);
 				state++;
 			break;
 			case 1:
 				WiFi.begin( ssid.c_str() );
+				//WiFi.setAutoReconnect(false);
+				DEBUG_MSG("Esperando resultado de la espera de la conexion");				
 			    if(WiFi.waitForConnectResult() == WL_CONNECTED){
 					//pointTime=millis();
 					state++;
 					DEBUG_MSG("Conectado al ssid %s",ssid.c_str());
 				}
+				DEBUG_MSG("Resultado de la conexion");				
+				
 			break;
 			case 2:
 				//if(WiFi.status() == WL_CONNECTED){
-					if(_client.connect(sip.c_str(), SERVER_PORT)){
+					if(_client.connect(ip, SERVER_PORT)){
 						state++;
 						connected=true;						
 					}					
@@ -164,7 +170,7 @@ void broadcastNode::modeCatchDataMessages(unsigned long duration,messageBroker *
 
 		}
 	}
-
+	WiFi.softAPdisconnect(true);
 		while(_server.hasClient()){
 			DEBUG_MSG("Parando un cliente");			
 			_client=_server.available();
@@ -181,6 +187,6 @@ void broadcastNode::modeCatchDataMessages(unsigned long duration,messageBroker *
 			_client.stop();					
 		}
 		//_server.stop();
-	WiFi.softAPdisconnect(true);		
+		
 }
  

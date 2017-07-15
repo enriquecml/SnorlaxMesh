@@ -7,7 +7,9 @@
 #include <ArduinoJson.h>
 #include "SingletonStats.h"
 #include "PubBase.h"
-void ICACHE_RAM_ATTR int_to_cero(int *flag);
+void ICACHE_RAM_ATTR int_to_cero(volatile int *flag);
+void ICACHE_RAM_ATTR int_to_cero( int *flag);
+
   unsigned long globalTime(unsigned long time);
  unsigned long substract(unsigned long a,unsigned long b);
 unsigned long min_time( unsigned long a,unsigned long b);

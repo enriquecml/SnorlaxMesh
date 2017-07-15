@@ -2,10 +2,11 @@
 
 SchedulerNode::SchedulerNode(){
 	WiFi.setAutoConnect(false);
+	//WiFi.setAutoReconnect(false);
 	publicators.add(new PubBase());
 	subscriptors.add(new SubBase());
     position_publicator_generate=0;	
-	randomSeed(millis());
+	randomSeed(ESP.getChipId());
 	
 	state=1;//load
 
@@ -140,7 +141,6 @@ bool SchedulerNode::prepare_send(){
 			waiting_for_send=true;
 			_messages.nextTimeSend(ssid_to_send,time_next_send,duration_send_ms,period_ms,min_time_ms+random_more_time_s*1000);
 			signal_of_send=1;
-			alarm_of_send.detach();
 			alarm_of_send.once_ms(time_next_send,int_to_cero,&signal_of_send);
 			DEBUG_MSG("Preparado envio para dentro de %d milisegundos",time_next_send);		
 			
@@ -177,10 +177,8 @@ bool SchedulerNode::process_messages(){
 
 void SchedulerNode::advise(){
 	next_time_receive_ms=millis()+period_ms;
-	alarm_of_receive.detach();
 	alarm_of_receive.once_ms(period_ms,int_to_cero,&signal_of_receive);				
 	node.modeCatchDataMessages(time_of_receive_ms,&_messages);
-	randomSeed(millis());
 	time_of_receive_ms=min_time_ms+random(random_more_time_s)*1000;
 	signal_of_receive=1;	
 }
@@ -202,6 +200,8 @@ void SchedulerNode::send(){
 
 				unsigned long duration=min(duration_send_ms,substract(next_time_receive_ms,millis()));
 				if(duration!=0 && _messages.isLostConnectionWithAP()==false){
+					if(duration!=duration_send_ms)//send interrupted for advise
+						duration_send_ms=substract(duration_send_ms,time_of_receive_ms);
 					duration_send_ms=substract(duration_send_ms,duration);
 					node.trySendMessages(duration,&_messages,ssid_to_send);					
 				}

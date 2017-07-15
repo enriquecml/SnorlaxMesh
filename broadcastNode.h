@@ -38,7 +38,7 @@ public:
   void scan(unsigned long duration_ms,messageBroker * messages,unsigned long max_range,unsigned long min_range);
  void createRate(String &sJson);
  
-  void trySendMessages(unsigned long duration,messageBroker * messages,String ssid); 
+  void trySendMessages(unsigned long duration,messageBroker * messages,String &ssid); 
   /*void searchNewNode(unsigned long duration,messageBroker * messages,unsigned long next_time_receive,unsigned long duration_time_receive,unsigned long period_receive);
 
   */

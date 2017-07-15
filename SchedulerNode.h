@@ -17,13 +17,13 @@ private:
 	unsigned long time_of_receive_ms;
 	
 	unsigned long period_ms;	
-	int signal_of_receive;
+	volatile int signal_of_receive;
 	Ticker alarm_of_receive;
 	unsigned long next_time_receive_ms;	
 	
 	Ticker alarm_of_send;
 	bool waiting_for_send;
-	int signal_of_send;
+	volatile  int signal_of_send;
     unsigned long time_next_send;
 	unsigned long duration_send_ms;
     String ssid_to_send;
