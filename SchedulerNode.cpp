@@ -2,6 +2,7 @@
 
 SchedulerNode::SchedulerNode(){
 	WiFi.setAutoConnect(false);
+	WiFi.persistent(false);
 	//WiFi.setAutoReconnect(false);
 	publicators.add(new PubBase());
 	subscriptors.add(new SubBase());
@@ -14,11 +15,13 @@ SchedulerNode::SchedulerNode(){
 	random_more_time_s=8;
 	time_of_receive_ms=min_time_ms+random(random_more_time_s)*1000;
 	
-	period_ms=120000;	
+	//period_ms=120000;
+	period_ms=random(PERIOD_MIN_MS,PERIOD_MAX_MS);
+	node.addPeriodToSSID(period_ms/1000);
 	signal_of_receive=0;//load
 	
 	scanning=false;//load
-	total_time_scanning=period_ms;//at moment same that period advise
+	total_time_scanning=PERIOD_MAX_MS;//at moment same that period advise
 	total_time_scanned=0;
 
 	waiting_for_send=false;//load
@@ -102,6 +105,7 @@ bool SchedulerNode::all_publicates(){
 	DEBUG_MSG("Generando publicaciones");
 
 	for(int i=0;i<publicators.size();i++){
+				yield();
 		if(!publicators.get(i)->publicated){
 			String sJson;
 			publicators.get(i)->generatePubMessage(sJson,node._ssid);
@@ -117,11 +121,16 @@ bool SchedulerNode::subscriptors_read_messages(){
 		DEBUG_MSG("Intentando leer mensaje");
 		String channel;
 		String origin;
+		String saux;
 		unsigned long sequence;
-		_messages.extractChannelAndSequence(_messages._messages_without_read.get(0),channel,sequence,origin);
+		saux=_messages._messages_without_read.get(0);
+		_messages.extractChannelAndSequence(saux,channel,sequence,origin);
 		for(int i=0;i<subscriptors.size();i++){
+					yield();
 			if(subscriptors.get(i)->channel.equals(channel)){
-				if(subscriptors.get(i)->read(_messages._messages_without_read.get(0))){
+						saux=_messages._messages_without_read.get(0);
+
+				if(subscriptors.get(i)->read(saux)){
 					_messages._messages_ready_to_send.add(_messages._messages_without_read.get(0));
 					_messages._messages_without_read.remove(0);
 					return true;					
@@ -157,14 +166,17 @@ bool SchedulerNode::process_messages(){
 		return true;
 	}
 	else{
+				yield();
 		if(all_publicates()){
 			return true;
 		}
 		else{
+					yield();
 			if(subscriptors_read_messages()){
 				return true;
 			}
 			else{
+						yield();
 				DEBUG_MSG("Eliminando mensajes");
 				if(_messages.removeMessage(publicators))
 					return true;
@@ -176,6 +188,7 @@ bool SchedulerNode::process_messages(){
 }
 
 void SchedulerNode::advise(){
+					DEBUG_MSG("Calculando siguiente tiempo de capturar mensajes");
 	next_time_receive_ms=millis()+period_ms;
 	alarm_of_receive.once_ms(period_ms,int_to_cero,&signal_of_receive);				
 	node.modeCatchDataMessages(time_of_receive_ms,&_messages);
@@ -198,7 +211,7 @@ void SchedulerNode::scan(){
 
 void SchedulerNode::send(){
 
-				unsigned long duration=min(duration_send_ms,substract(next_time_receive_ms,millis()));
+				unsigned long duration=min(duration_send_ms,substract(next_time_receive_ms,millis()+1000));
 				if(duration!=0 && _messages.isLostConnectionWithAP()==false){
 					if(duration!=duration_send_ms)//send interrupted for advise
 						duration_send_ms=substract(duration_send_ms,time_of_receive_ms);
@@ -213,6 +226,7 @@ void SchedulerNode::send(){
 
 
  void SchedulerNode::do_run(){
+	 yield();
 	switch(state){
 		case 1://Receive messages period	
 				advise();
@@ -229,6 +243,7 @@ void SchedulerNode::send(){
 				
 			}
 			else{
+						yield();
 				if(process_messages()){
 					//process maybe duplicate
 					//process_message_stamp
@@ -237,11 +252,13 @@ void SchedulerNode::send(){
 					//process_eliminate							
 				}
 				else{
+							yield();
 					if(prepare_send()){
 						//generateNextTimeSend
 					}				
 					else{
 						DEBUG_MSG("Dormir tras ...");
+						Serial.println(ESP.getFreeHeap());
 						state=5;
 					}					
 				}
@@ -254,6 +271,7 @@ void SchedulerNode::send(){
 		break;
 		case 5:
 			//sleep
+			yield();
 			stateMachine();
 		break;
 	}

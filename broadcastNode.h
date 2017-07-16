@@ -35,6 +35,7 @@ public:
   String _ssid;
 
   broadcastNode();
+  void addPeriodToSSID(unsigned long period_s);
   void scan(unsigned long duration_ms,messageBroker * messages,unsigned long max_range,unsigned long min_range);
  void createRate(String &sJson);
  

@@ -11,10 +11,11 @@ broadcastNode::broadcastNode():_server(SERVER_PORT)
 
    void broadcastNode::scan(unsigned long duration_ms,messageBroker * messages,unsigned long max_range,unsigned long min_range){
   	Ticker t;
-	int in = 1;
+	volatile int in = 1;
 	t.once_ms(duration_ms,int_to_cero,&in);
 	unsigned long pointTime1;
 	unsigned long pointTime2;	
+	String saux;
 	String filter=String(SSID_PREFIX);   
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect();
@@ -24,18 +25,24 @@ broadcastNode::broadcastNode():_server(SERVER_PORT)
 	pointTime2=millis();
     for (int i = 0; i < n; ++i) {
       if(WiFi.SSID(i).startsWith(filter)){
-		messages->updateAP(WiFi.SSID(i),substract(pointTime2,(pointTime2-pointTime1)/2),true,max_range,min_range);
+		saux=WiFi.SSID(i);  
+		messages->updateAP(saux,substract(pointTime2,(pointTime2-pointTime1)/2),true,max_range,min_range);
       }
+	  yield();
     }
 	}
 	WiFi.disconnect(true);
 	
   }
+
+  void broadcastNode::addPeriodToSSID(unsigned long period_s){
+	_ssid=String(_ssid+String("S")+String(period_s));  
+  }
   
 void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messages,String & ssid){
 	 SingletonStats::instance()->n_try_connections++;
   	Ticker t;	
-	int in = 1;
+	volatile int in = 1;
 	t.once_ms(duration,int_to_cero,&in);
 	//unsigned long pointTime;
 	int state=0;
@@ -45,6 +52,7 @@ void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messa
 	IPAddress ip(192, 168, 4, 1);
 	//String sip=String(SERVER_IP_ADDR);
 	while(in && !sent){
+		yield();
 		switch(state){
 			case 0:
 				_client.setNoDelay(true);
@@ -130,7 +138,7 @@ void broadcastNode::createRate(String &sJson){
 
 void broadcastNode::modeCatchDataMessages(unsigned long duration,messageBroker *messages){
 	Ticker t;
-	int in = 1;
+	volatile int in = 1;
 	t.once_ms(duration,int_to_cero,&in);
 
 	int state=0;

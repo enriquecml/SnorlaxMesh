@@ -5,7 +5,7 @@
 	 channel=String("INFO_STATS");  
   }
   
-  void PubBase::generatePubMessage(String &sJson,String origin_ssid){
+  void PubBase::generatePubMessage(String &sJson,String &origin_ssid){
 	DynamicJsonBuffer jsonBuffer;
 
 	JsonObject& root = jsonBuffer.createObject();

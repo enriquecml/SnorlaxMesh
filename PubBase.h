@@ -12,6 +12,6 @@ public:
   bool publicated;
   String channel;
   PubBase();
- void generatePubMessage(String &sJson,String origin_ssid);
+ void generatePubMessage(String &sJson,String &origin_ssid);
 };
 #endif

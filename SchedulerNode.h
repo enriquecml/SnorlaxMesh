@@ -5,6 +5,10 @@
 #include "PubBase.h"
 #include "SubBase.h"
 #include "SingletonStats.h"
+//10 MINUTES
+#define PERIOD_MAX_MS 150000
+#define PERIOD_MIN_MS 90000
+//2 MINUTES
 enum States{NONE,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
 class SchedulerNode{
 

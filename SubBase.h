@@ -13,7 +13,7 @@ class SubBase{
 public:
   String channel;
   SubBase();
-  bool read(String sJson);
+  bool read(String &sJson);
  //void generatePubMessage(String &sJson);
 };
 #endif

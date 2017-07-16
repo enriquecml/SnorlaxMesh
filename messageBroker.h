@@ -41,36 +41,36 @@ public:
 LinkedList<String> _messages_ready_to_send; 
   messageBroker();
   //int giveMeNumberNodesKnow();
-  bool nextMessage(String node,String &message);
+  bool nextMessage(String &node,String &message);
 
   bool removeMessage(LinkedList<PubBase*> &publicators);
   
-  void extractChannelAndSequence(String sJson,String &Channel,unsigned long &sequence,String &Origin);
+  void extractChannelAndSequence(String &sJson,String &Channel,unsigned long &sequence,String &Origin);
 
-bool wasHere(String sJson,String ssid);  
+bool wasHere(String &sJson,String &ssid);  
   
-  bool existMessage(String sJson);
+  bool existMessage(String &sJson);
   bool reviewMessages(String &ssid);
-  void addNodeToMessage(String &sJson,String ssid);  
- void updateAP(String name_node,unsigned long time_saw,bool scan,unsigned long max_range,unsigned long min_range); 
-  void entryMessage(String sJson);
+  void addNodeToMessage(String &sJson,String &ssid);  
+ void updateAP(String &name_node,unsigned long time_saw,bool scan,unsigned long max_range,unsigned long min_range); 
+  void entryMessage(String &sJson);
 
   bool connected_all();
 
   void resetConnected();
 
-void putConnected(String ssid);
+void putConnected(String &ssid);
 
-void incrementTry(String ssid);
+void incrementTry(String &ssid);
   
-  int givePositionNode(String name_node);
+  int givePositionNode(String &name_node);
 
 void nextTimeSend(String &ssid,unsigned long &time_next_send,unsigned long &duration_send,unsigned long period_ms,unsigned long min_time_receive);
 
 bool isLostConnectionWithAP();
 int numberOfAPs();
 
-bool updateRate(String sJson);
+bool updateRate(String &sJson);
   
 };
 

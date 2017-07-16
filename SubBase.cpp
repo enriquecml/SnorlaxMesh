@@ -4,7 +4,7 @@
 	channel = String("INFO_STATS");  
   }
 
-  String urlencode(String str)
+  String urlencode(String &str)
 {
     String encodedString="";
     char c;
@@ -39,7 +39,7 @@
     
 }
   
-  bool SubBase::read(String sJson){
+  bool SubBase::read(String &sJson){
 
   WiFi.begin(String("MOVISTAR_0234").c_str(), String("85C4117DAA30EFFEF5D4").c_str());
   
