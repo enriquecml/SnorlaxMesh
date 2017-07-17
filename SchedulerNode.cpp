@@ -1,8 +1,8 @@
 #include "SchedulerNode.h"
 
 SchedulerNode::SchedulerNode(){
-	WiFi.setAutoConnect(false);
-	WiFi.persistent(false);
+	//WiFi.setAutoConnect(false);
+	//WiFi.persistent(false);
 	//WiFi.setAutoReconnect(false);
 	publicators.add(new PubBase());
 	subscriptors.add(new SubBase());
@@ -79,7 +79,7 @@ void SchedulerNode::stateMachine(){
 			}			
 		break;
 		case 5:
-			if(signal_of_receive==0){
+			if(signal_of_receive==0 || millis()>next_time_receive_ms){
 				state=1;//ADVISE
 				break;
 			}
@@ -178,7 +178,7 @@ bool SchedulerNode::process_messages(){
 			else{
 						yield();
 				DEBUG_MSG("Eliminando mensajes");
-				if(_messages.removeMessage(publicators))
+				if(_messages.removeMessage(publicators,node._ssid))
 					return true;
 			}			
 		}		

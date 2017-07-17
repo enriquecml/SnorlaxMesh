@@ -43,7 +43,7 @@ LinkedList<String> _messages_ready_to_send;
   //int giveMeNumberNodesKnow();
   bool nextMessage(String &node,String &message);
 
-  bool removeMessage(LinkedList<PubBase*> &publicators);
+  bool removeMessage(LinkedList<PubBase*> &publicators,String &ownSSID);
   
   void extractChannelAndSequence(String &sJson,String &Channel,unsigned long &sequence,String &Origin);
 

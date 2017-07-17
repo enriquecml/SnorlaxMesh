@@ -46,7 +46,7 @@ bool messageBroker::nextMessage(String &node,String &message){
 	return false;
 }
 
-bool messageBroker::removeMessage(LinkedList<PubBase*> &publicators){
+bool messageBroker::removeMessage(LinkedList<PubBase*> &publicators,String &ownSSID){
 	if(_messages_ready_to_send.size()>0 && APs.size()>0){
 		for(int i=0;i<APs.size();i++){
 			if(APs.get(i)->positionMessage==0)
@@ -59,7 +59,7 @@ bool messageBroker::removeMessage(LinkedList<PubBase*> &publicators){
 	saux=_messages_ready_to_send.get(0);
 	extractChannelAndSequence(saux,channel1,sequence1,origin1);
 	for(int i=0;i<publicators.size();i++){
-		if(publicators.get(i)->channel.equals(channel1) && origin1.equals(String( String("BN") + String( ESP.getChipId()) ))){
+		if(publicators.get(i)->channel.equals(channel1) && origin1.equals(ownSSID) ){
 			publicators.get(i)->publicated=false;
 		}
 	}	
