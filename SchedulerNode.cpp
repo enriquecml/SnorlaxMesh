@@ -1,9 +1,21 @@
 #include "SchedulerNode.h"
-
+volatile int signal_of_receive;
+volatile  int signal_of_send;
+void ICACHE_RAM_ATTR receive_to_cero(){
+	signal_of_receive=0;
+}
+void ICACHE_RAM_ATTR send_to_cero(){
+	signal_of_send=0;
+}
 SchedulerNode::SchedulerNode(){
-	//WiFi.setAutoConnect(false);
-	//WiFi.persistent(false);
-	//WiFi.setAutoReconnect(false);
+	
+	WiFi.setAutoConnect(false);
+	WiFi.persistent(false);
+					WiFi.forceSleepBegin();                  // turn off ESP8266 RF
+				delay(1);  	
+	/*WiFi.mode(WIFI_STA);
+	WiFi.setAutoReconnect(false);
+	WiFi.mode(WIFI_OFF);*/
 	publicators.add(new PubBase());
 	subscriptors.add(new SubBase());
     position_publicator_generate=0;	
@@ -79,11 +91,13 @@ void SchedulerNode::stateMachine(){
 			}			
 		break;
 		case 5:
-			if(signal_of_receive==0 || millis()>next_time_receive_ms){
+			if(signal_of_receive==0){
+				DEBUG_MSG("Anunciaremos\n");
 				state=1;//ADVISE
 				break;
 			}
 			if(signal_of_send==0){
+				DEBUG_MSG("Enviaremos\n");				
 				state=4;//SEND MESSAGES
 				break;
 			}									
@@ -105,7 +119,7 @@ bool SchedulerNode::all_publicates(){
 	DEBUG_MSG("Generando publicaciones");
 
 	for(int i=0;i<publicators.size();i++){
-				yield();
+				
 		if(!publicators.get(i)->publicated){
 			String sJson;
 			publicators.get(i)->generatePubMessage(sJson,node._ssid);
@@ -126,7 +140,7 @@ bool SchedulerNode::subscriptors_read_messages(){
 		saux=_messages._messages_without_read.get(0);
 		_messages.extractChannelAndSequence(saux,channel,sequence,origin);
 		for(int i=0;i<subscriptors.size();i++){
-					yield();
+					
 			if(subscriptors.get(i)->channel.equals(channel)){
 						saux=_messages._messages_without_read.get(0);
 
@@ -150,7 +164,7 @@ bool SchedulerNode::prepare_send(){
 			waiting_for_send=true;
 			_messages.nextTimeSend(ssid_to_send,time_next_send,duration_send_ms,period_ms,min_time_ms+random_more_time_s*1000);
 			signal_of_send=1;
-			alarm_of_send.once_ms(time_next_send,int_to_cero,&signal_of_send);
+			alarm_of_send.once_ms(time_next_send,send_to_cero);
 			DEBUG_MSG("Preparado envio para dentro de %d milisegundos",time_next_send);		
 			
 			return true;
@@ -166,17 +180,17 @@ bool SchedulerNode::process_messages(){
 		return true;
 	}
 	else{
-				yield();
+				
 		if(all_publicates()){
 			return true;
 		}
 		else{
-					yield();
+					
 			if(subscriptors_read_messages()){
 				return true;
 			}
 			else{
-						yield();
+						
 				DEBUG_MSG("Eliminando mensajes");
 				if(_messages.removeMessage(publicators,node._ssid))
 					return true;
@@ -190,35 +204,40 @@ bool SchedulerNode::process_messages(){
 void SchedulerNode::advise(){
 					DEBUG_MSG("Calculando siguiente tiempo de capturar mensajes");
 	next_time_receive_ms=millis()+period_ms;
-	alarm_of_receive.once_ms(period_ms,int_to_cero,&signal_of_receive);				
+	alarm_of_receive.once_ms(period_ms,receive_to_cero);				
 	node.modeCatchDataMessages(time_of_receive_ms,&_messages);
 	time_of_receive_ms=min_time_ms+random(random_more_time_s)*1000;
 	signal_of_receive=1;	
 }
 
 void SchedulerNode::scan(){
-			
+
 			unsigned long time_of_scan=min(substract(total_time_scanning,total_time_scanned),substract(next_time_receive_ms,millis()));
 			if(time_of_scan!=0){
+				DEBUG_MSG("SCAN INSIDE");
 				total_time_scanned+=time_of_scan;				
 				node.scan(time_of_scan,&_messages,min_time_ms+random_more_time_s*1000,min_time_ms);
 			}	
 			else{
+				DEBUG_MSG("SCAN OUT");
 				SingletonStats::instance()->n_scanned++;								
 				scanning=false;
 			}	
 }
 
 void SchedulerNode::send(){
-
+			DEBUG_MSG("SEND 1");
 				unsigned long duration=min(duration_send_ms,substract(next_time_receive_ms,millis()+1000));
 				if(duration!=0 && _messages.isLostConnectionWithAP()==false){
+								DEBUG_MSG("SEND INSIDE");
 					if(duration!=duration_send_ms)//send interrupted for advise
 						duration_send_ms=substract(duration_send_ms,time_of_receive_ms);
 					duration_send_ms=substract(duration_send_ms,duration);
-					node.trySendMessages(duration,&_messages,ssid_to_send);					
+					node.trySendMessages(duration,&_messages,ssid_to_send,next_time_receive_ms);					
 				}
 				else{
+													DEBUG_MSG("SEND OUT");
+
 					waiting_for_send=false;
 					signal_of_send=1;	
 				}
@@ -226,16 +245,15 @@ void SchedulerNode::send(){
 
 
  void SchedulerNode::do_run(){
-	 yield();
+	 
+	 //DEBUG_MSG("from state %i\n", state);	
 	switch(state){
 		case 1://Receive messages period	
 				advise();
-				stateMachine();
-				DEBUG_MSG("state %i\n", state);
 		break;
 		case 2:
 			scan();
-			stateMachine();
+
 		break;
 		case 3:
 			
@@ -243,7 +261,7 @@ void SchedulerNode::send(){
 				
 			}
 			else{
-						yield();
+						
 				if(process_messages()){
 					//process maybe duplicate
 					//process_message_stamp
@@ -252,7 +270,7 @@ void SchedulerNode::send(){
 					//process_eliminate							
 				}
 				else{
-							yield();
+							
 					if(prepare_send()){
 						//generateNextTimeSend
 					}				
@@ -263,16 +281,15 @@ void SchedulerNode::send(){
 					}					
 				}
 				}			
-			stateMachine();
 		break;
 		case 4:
-			send();
-			stateMachine();		
+			send();	
 		break;
 		case 5:
 			//sleep
-			yield();
-			stateMachine();
+			
 		break;
 	}
+	stateMachine();
+	//DEBUG_MSG("to state %i\n", state);	
  }

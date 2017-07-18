@@ -1,6 +1,9 @@
 
 #include "broadcastNode.h"
-
+volatile int in;
+void ICACHE_RAM_ATTR in_to_cero(){
+	in=0;
+}
 broadcastNode::broadcastNode():_server(SERVER_PORT)
 {
   _chip_id = ESP.getChipId();
@@ -10,13 +13,14 @@ broadcastNode::broadcastNode():_server(SERVER_PORT)
 }
 
    void broadcastNode::scan(unsigned long duration_ms,messageBroker * messages,unsigned long max_range,unsigned long min_range){
-  	Ticker t;
-	volatile int in = 1;
-	t.once_ms(duration_ms,int_to_cero,&in);
+	in = 1;
+	t.once_ms(duration_ms,in_to_cero);
 	unsigned long pointTime1;
 	unsigned long pointTime2;	
 	String saux;
-	String filter=String(SSID_PREFIX);   
+	String filter=String(SSID_PREFIX);
+  WiFi.forceSleepWake();
+  delay(1);	
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect();
 	while(in){
@@ -28,23 +32,25 @@ broadcastNode::broadcastNode():_server(SERVER_PORT)
 		saux=WiFi.SSID(i);  
 		messages->updateAP(saux,substract(pointTime2,(pointTime2-pointTime1)/2),true,max_range,min_range);
       }
-	  yield();
+	  
     }
 	}
 	WiFi.disconnect(true);
-	
+					WiFi.forceSleepBegin();                  // turn off ESP8266 RF
+				delay(1);  	
+		t.detach();	
   }
 
   void broadcastNode::addPeriodToSSID(unsigned long period_s){
 	_ssid=String(_ssid+String("S")+String(period_s));  
   }
   
-void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messages,String & ssid){
+void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messages,String & ssid,unsigned long next_time_receive){
 	 SingletonStats::instance()->n_try_connections++;
-  	Ticker t;	
-	volatile int in = 1;
-	t.once_ms(duration,int_to_cero,&in);
-	//unsigned long pointTime;
+  		
+	in = 1;
+	t.once_ms(duration,in_to_cero);
+	unsigned long pointTime;
 	int state=0;
 	bool sent=false;
 	bool connected=false;
@@ -52,15 +58,17 @@ void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messa
 	IPAddress ip(192, 168, 4, 1);
 	//String sip=String(SERVER_IP_ADDR);
 	while(in && !sent){
-		yield();
+		
 		switch(state){
 			case 0:
 				_client.setNoDelay(true);
 				state++;
 			break;
 			case 1:
+				  WiFi.forceSleepWake();
+				  delay(1);
 				WiFi.begin( ssid.c_str() );
-				//WiFi.setAutoReconnect(false);
+				WiFi.setAutoReconnect(true);
 				DEBUG_MSG("Esperando resultado de la espera de la conexion");				
 			    if(WiFi.waitForConnectResult() == WL_CONNECTED){
 					//pointTime=millis();
@@ -96,7 +104,7 @@ void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messa
 						}
 					}else{
 						SingletonStats::instance()->n_messages_sent++;
-						createRate(m);
+						createRate(m,next_time_receive);
 						if(m.length()>0){
 							Serial.println(m);						
 							_client.println(m);
@@ -112,9 +120,13 @@ void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messa
 	}
 	_client.flush();
 	_client.stop();
-	WiFi.disconnect(true);
+	if(state>1){
+		WiFi.setAutoReconnect(false);
+	WiFi.disconnect(true);}
+				WiFi.forceSleepBegin();                  // turn off ESP8266 RF
+				delay(1);  	
 	if(connected){
-		//messages->updateAP(ssid,substract(pointTime,1000),0,0);
+		//messages->updateAP(ssid,pointTime,false,0,0);
 		//connected true
 		messages->putConnected(ssid);
 	}
@@ -122,35 +134,36 @@ void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messa
 		SingletonStats::instance()->n_failed_connections++;
 		messages->incrementTry(ssid);
 	}
-
+		t.detach();	
   }  
 
-void broadcastNode::createRate(String &sJson){
+void broadcastNode::createRate(String &sJson,unsigned long next_time_receive){
 	DynamicJsonBuffer jsonBuffer;
 
 	JsonObject& root = jsonBuffer.createObject();
 	root["rate"]=SingletonStats::instance()->n_messages_received/SingletonStats::instance()->n_messages_sent;
 	root["channel"]=String("_RATE");
 	root["id"]=_ssid;
+	root["next_time_receive"]=substract(next_time_receive,millis());	
 	root.printTo(sJson);
 	sJson.trim();
 }  
 
 void broadcastNode::modeCatchDataMessages(unsigned long duration,messageBroker *messages){
-	Ticker t;
-	volatile int in = 1;
-	t.once_ms(duration,int_to_cero,&in);
-
+	in = 1;
+	t.once_ms(duration,in_to_cero);
+	unsigned long stamp;
 	int state=0;
 	//bool yetClient=false;
 	while(in){
 		yield();
 		switch(state){
 			case 0:
+			  WiFi.forceSleepWake();
+  delay(1);
 				WiFi.softAP(_ssid.c_str());	
 				_server.setNoDelay(true);				
 				_server.begin();
-				
 				state++;
 			break;
 			case 1:
@@ -162,12 +175,13 @@ void broadcastNode::modeCatchDataMessages(unsigned long duration,messageBroker *
 			case 2:
 				if(_client.connected()){
 					if (_client.available()){
+						stamp=millis();
 						String line = _client.readStringUntil('\n');
 						Serial.println("Recibido");
 						Serial.println(line);
 						line.trim();
 						if(line.length()>0)
-							messages->entryMessage(line);//Dont forget Global Time(Singleton or global Variable) or across time for parameter
+							messages->entryMessage(line,stamp);//Dont forget Global Time(Singleton or global Variable) or across time for parameter
 
 					}				
 				}
@@ -178,23 +192,27 @@ void broadcastNode::modeCatchDataMessages(unsigned long duration,messageBroker *
 
 		}
 	}
+	if(state>0){
 	WiFi.softAPdisconnect(true);
+					WiFi.forceSleepBegin();                  // turn off ESP8266 RF
+				delay(1);  	}
 		while(_server.hasClient()){
 			DEBUG_MSG("Parando un cliente");			
 			_client=_server.available();
 					if (_client.available()){
+						//stamp=millis();
 						String line = _client.readStringUntil('\n');
-						Serial.println("Recibido");
-						Serial.println(line);						
-						messages->entryMessage(line);//Dont forget Global Time(Singleton or global Variable) or across time for parameter
+						//Serial.println("Recibido");
+						//Serial.println(line);						
+						//messages->entryMessage(line);//Dont forget Global Time(Singleton or global Variable) or across time for parameter
 						line.trim();
-						if(line.length()>0)
-							messages->entryMessage(line);//Dont forget Global Time(Singleton or global Variable) or across time for parameter
+						//if(line.length()>0)
+							//messages->entryMessage(line);//Dont forget Global Time(Singleton or global Variable) or across time for parameter
 					}				
 			_client.flush();
 			_client.stop();					
 		}
 		//_server.stop();
-		
+		t.detach();
 }
  

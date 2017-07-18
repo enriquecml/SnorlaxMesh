@@ -102,7 +102,7 @@ bool messageBroker::existMessage(String &sJson){
 	for(int i =0;i<_messages_ready_to_send.size();i++){
 		saux=_messages_ready_to_send.get(i);
 		extractChannelAndSequence(saux,channel2,sequence2,origin2);
-					yield();
+					
 
 		if(sequence1 == sequence2 && channel1.equals(channel2) && origin1.equals(origin2)){
 			SingletonStats::instance()->n_messages_repeatly++;			
@@ -113,7 +113,7 @@ bool messageBroker::existMessage(String &sJson){
 	for(int i=0;i<_messages_without_read.size();i++){
 		saux=_messages_without_read.get(i);
 		extractChannelAndSequence(saux,channel2,sequence2,origin2);
-				yield();		
+						
 
 		if(sequence1 == sequence2 && channel1.equals(channel2) && origin1.equals(origin2)){
 			SingletonStats::instance()->n_messages_repeatly++;			
@@ -124,7 +124,7 @@ bool messageBroker::existMessage(String &sJson){
 	for(int i = 1;i<_messages_without_review.size();i++){
 		saux=_messages_without_review.get(i);
 		extractChannelAndSequence(saux,channel2,sequence2,origin2);
-		yield();
+		
 		if(sequence1 == sequence2 && channel1.equals(channel2) && origin1.equals(origin2)){
 			SingletonStats::instance()->n_messages_repeatly++;			
 			return true;
@@ -194,6 +194,7 @@ unsigned long distance(unsigned long a,unsigned long b){
 void messageBroker::updateAP(String &name_node,unsigned long time_saw,bool scan,unsigned long max_range,unsigned long min_range){
 	int position=givePositionNode(name_node);
 	if(position!=-1){
+		/*if(scan){
 		unsigned long d=distance(APs.get(position)->time_saw,time_saw);
 		if(d<=max_range){
 			APs.get(position)->uncertainty=substract(max_range,d);
@@ -202,6 +203,11 @@ void messageBroker::updateAP(String &name_node,unsigned long time_saw,bool scan,
 			APs.get(position)->time_saw=time_saw;
 			APs.get(position)->uncertainty=max_range;			
 		}
+		}
+		else{
+			APs.get(position)->time_saw=time_saw;
+			APs.get(position)->uncertainty=0;			
+		}*/
 	}
 	else{
 		AP * aux;		
@@ -217,7 +223,7 @@ void messageBroker::updateAP(String &name_node,unsigned long time_saw,bool scan,
 	lostConnectionWithAP=false;
 }
 
-bool messageBroker::updateRate(String &sJson){
+bool messageBroker::updateRate(String &sJson,unsigned long stamp){
  String Channel;
  String Origin;
  int p;
@@ -233,15 +239,18 @@ bool messageBroker::updateRate(String &sJson){
 	p=givePositionNode(Origin);
 	if(p!=-1){
 		APs.get(p)->rate=root["rate"];
+		APs.get(p)->time_saw=substract(root["next_time_receive"],substract(millis(),stamp));
+		APs.get(p)->time_saw+=millis();
+		APs.get(p)->uncertainty=0;
 	}
 	return true;
   }
   return false;	
 }
 
-void messageBroker::entryMessage(String &sJson){
+void messageBroker::entryMessage(String &sJson,unsigned long stamp){
 	SingletonStats::instance()->n_messages_received++;
-	if(!updateRate(sJson)){
+	if(!updateRate(sJson,stamp)){
 		DEBUG_MSG("MENSAJE DE DATOS");
 		Serial.println(sJson);
 	_messages_without_review.add(sJson);
@@ -301,10 +310,10 @@ void messageBroker::incrementTry(String &ssid){
 
 void messageBroker::nextTimeSend(String &ssid,unsigned long &time_next_send,unsigned long &duration_send,unsigned long period_ms,unsigned long min_time_receive){
 	int positionAP = -1;
-	for(int i=0;i<APs.size();i++){
-				yield();
+	for(int i=0;i<APs.size() && positionAP==-1;i++){
+				
 		if(!APs.get(i)->connected){
-			positionAP = i;			
+			positionAP = i;
 		}
 	}
 

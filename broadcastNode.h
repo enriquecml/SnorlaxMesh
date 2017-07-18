@@ -26,7 +26,7 @@ private:
   //void createSchedule(unsigned long pointTime,unsigned long next_time_receive,unsigned long duration_time_receive,unsigned long period_receive,String &sJSON);
 	WiFiClient _client;
 	WiFiServer _server;
-
+Ticker t;
 
 public:
   unsigned long sent;
@@ -37,9 +37,9 @@ public:
   broadcastNode();
   void addPeriodToSSID(unsigned long period_s);
   void scan(unsigned long duration_ms,messageBroker * messages,unsigned long max_range,unsigned long min_range);
- void createRate(String &sJson);
+ void createRate(String &sJson,unsigned long next_time_receive);
  
-  void trySendMessages(unsigned long duration,messageBroker * messages,String &ssid); 
+  void trySendMessages(unsigned long duration,messageBroker * messages,String &ssid,unsigned long next_time_receive); 
   /*void searchNewNode(unsigned long duration,messageBroker * messages,unsigned long next_time_receive,unsigned long duration_time_receive,unsigned long period_receive);
 
   */

@@ -15,7 +15,7 @@ void ICACHE_RAM_ATTR int_to_cero( int *flag);
 unsigned long min_time( unsigned long a,unsigned long b);
 
 #define DEBUG 1
-#define DEBUG_ESP_PORT Serial
+//#define DEBUG_ESP_PORT Serial
 #ifdef DEBUG_ESP_PORT
 #define DEBUG_MSG(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
 #else
@@ -53,7 +53,7 @@ bool wasHere(String &sJson,String &ssid);
   bool reviewMessages(String &ssid);
   void addNodeToMessage(String &sJson,String &ssid);  
  void updateAP(String &name_node,unsigned long time_saw,bool scan,unsigned long max_range,unsigned long min_range); 
-  void entryMessage(String &sJson);
+  void entryMessage(String &sJson,unsigned long stamp);
 
   bool connected_all();
 
@@ -70,7 +70,7 @@ void nextTimeSend(String &ssid,unsigned long &time_next_send,unsigned long &dura
 bool isLostConnectionWithAP();
 int numberOfAPs();
 
-bool updateRate(String &sJson);
+bool updateRate(String &sJson,unsigned long stamp);
   
 };
 
