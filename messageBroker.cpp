@@ -102,7 +102,7 @@ bool messageBroker::existMessage(String &sJson){
 	for(int i =0;i<_messages_ready_to_send.size();i++){
 		saux=_messages_ready_to_send.get(i);
 		extractChannelAndSequence(saux,channel2,sequence2,origin2);
-					yield();
+					//yield();
 
 		if(sequence1 == sequence2 && channel1.equals(channel2) && origin1.equals(origin2)){
 			SingletonStats::instance()->n_messages_repeatly++;			
@@ -113,7 +113,7 @@ bool messageBroker::existMessage(String &sJson){
 	for(int i=0;i<_messages_without_read.size();i++){
 		saux=_messages_without_read.get(i);
 		extractChannelAndSequence(saux,channel2,sequence2,origin2);
-				yield();		
+				//yield();		
 
 		if(sequence1 == sequence2 && channel1.equals(channel2) && origin1.equals(origin2)){
 			SingletonStats::instance()->n_messages_repeatly++;			
@@ -124,7 +124,7 @@ bool messageBroker::existMessage(String &sJson){
 	for(int i = 1;i<_messages_without_review.size();i++){
 		saux=_messages_without_review.get(i);
 		extractChannelAndSequence(saux,channel2,sequence2,origin2);
-		yield();
+		//yield();
 		if(sequence1 == sequence2 && channel1.equals(channel2) && origin1.equals(origin2)){
 			SingletonStats::instance()->n_messages_repeatly++;			
 			return true;
@@ -302,7 +302,7 @@ void messageBroker::incrementTry(String &ssid){
 void messageBroker::nextTimeSend(String &ssid,unsigned long &time_next_send,unsigned long &duration_send,unsigned long period_ms,unsigned long min_time_receive){
 	int positionAP = -1;
 	for(int i=0;i<APs.size();i++){
-				yield();
+				//yield();
 		if(!APs.get(i)->connected){
 			positionAP = i;			
 		}
@@ -327,7 +327,7 @@ void messageBroker::nextTimeSend(String &ssid,unsigned long &time_next_send,unsi
 	}
 	else{
 		time_next_send=period_s-((millis()-time_saw)%period_s);
-			if(time_next_send<100)//little time now, then put the next period
+			//if(time_next_send<100)//little time now, then put the next period
 				time_next_send+=period_s;
 	}
 if(0!=random(APs.get(positionAP)->rate))

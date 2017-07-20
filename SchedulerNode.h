@@ -1,67 +1,83 @@
 #ifndef __SCHEDULERNODE_H__
 #define __SCHEDULERNODE_H__
 
+#include <Arduino.h>
+
+#include <ArduinoJson.h>
+#include <LinkedList.h>
+#include <FS.h>
+
+#include "Task.h"
+
+#include "messageBroker.h"
+#include "AP.h"
 #include "broadcastNode.h"
-#include "PubBase.h"
-#include "SubBase.h"
-#include "SingletonStats.h"
-//10 MINUTES
-#define PERIOD_MAX_MS 150000
-#define PERIOD_MIN_MS 90000
-//2 MINUTES
+
 enum States{NONE,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
+
 class SchedulerNode{
 
 private:
+	//amount time
+	unsigned long total_time;
+	//Period
+	unsigned long period_ms;
 
+	//Advise	
+	
+	unsigned long more_random_time_advise_ms;
+	unsigned long duration_advise_ms;
+	unsigned long next_time_advise_ms;
+	unsigned long time_setup_next_advise_ms;
+	bool time_of_advise();
+
+	void do_Advise();
+	void make_Advise();
+	
+	//List of Tasks of User
+	LinkedList<Task*> *tasks;
+
+	// Machine States
 	int state;
+	void machineStates();
+	
+	//List of APs
+	
+	LinkedList<AP*> *APs;
+	
+	//Message Broker
+	
+	messageBroker * messages;
+	
+	//Node
+	
+	broadcastNode * node;
+	
+	//Methods set resources
+	void set_APs(LinkedList<AP*> *_APs);
+	
+	void set_messageBroker(messageBroker * _messages);
+	
+	void set_node(broadcastNode * _node);
+	
+	//
+	unsigned long calculate_period();	
 
-	unsigned long min_time_ms;
-	unsigned long random_more_time_s;
-	unsigned long time_of_receive_ms;
+	unsigned long time_now();
 	
-	unsigned long period_ms;	
-	volatile int signal_of_receive;
-	Ticker alarm_of_receive;
-	unsigned long next_time_receive_ms;	
+	void save_configuration();
 	
-	Ticker alarm_of_send;
-	bool waiting_for_send;
-	volatile  int signal_of_send;
-    unsigned long time_next_send;
-	unsigned long duration_send_ms;
-    String ssid_to_send;
+	void load_configuration();
+	
 
-	bool scanning;
-	unsigned long total_time_scanned;
-	unsigned long total_time_scanning;
 	
-	broadcastNode node;
-	messageBroker _messages;	
-
-	LinkedList<PubBase*> publicators;
-	int position_publicator_generate;
-	
-	LinkedList<SubBase*> subscriptors;
-	void advise();
-	void scan();
-	void send();
-	
-bool subscriptors_read_messages();	
 	
 public:
+		SchedulerNode();
 
-bool all_publicates();
-
-	SchedulerNode();
-	void stateMachine();	
-	void do_run();
+	void TestLoadSave();
+	void Init();
 	
-bool prepare_scanning();
-
-bool prepare_send();
-
-bool process_messages();	
 };
 
 #endif
