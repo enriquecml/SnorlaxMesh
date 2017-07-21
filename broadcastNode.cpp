@@ -1,10 +1,10 @@
 
 #include "broadcastNode.h"
 
-broadcastNode::broadcastNode():_server(SERVER_PORT)
+broadcastNode::broadcastNode():server(SERVER_PORT)
 {
 	chip_id = ESP.getChipId();
-	ssid = String( String( SSID_PREFIX ) + String( _chip_id ) );  
+	ssid = String( String( SSID_PREFIX ) + String( chip_id ) );  
 }
 
 void broadcastNode::upWiFi(){

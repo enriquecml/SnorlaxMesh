@@ -32,7 +32,7 @@ public:
   
   void initServer();
   bool readMessage(String &msg);
-  bool closingServer(String &msg);
+  void closingServer();
   
 };
 
