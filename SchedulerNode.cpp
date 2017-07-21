@@ -46,7 +46,7 @@ void SchedulerNode::do_Advise(){
 		if(node->readMessage(msg))
 			messages->addMessageToReviewQueue(msg);
 		
-		if(time_now-init_time>=duration_advise_ms)
+		if(time_now()-init_time>=duration_advise_ms)
 			flag=false;
 	}
 	
