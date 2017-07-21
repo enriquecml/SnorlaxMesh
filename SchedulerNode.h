@@ -13,7 +13,7 @@
 #include "AP.h"
 #include "broadcastNode.h"
 
-enum States{NONE,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
+enum States{SETUP,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
 
 class SchedulerNode{
 
@@ -33,6 +33,13 @@ private:
 
 	void do_Advise();
 	void make_Advise();
+	
+	//Scan
+	
+	bool scan;
+	unsigned long time_scanned;
+	void do_Scan();
+	void make_Scan();
 	
 	//List of Tasks of User
 	LinkedList<Task*> *tasks;

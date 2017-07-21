@@ -28,7 +28,7 @@ void SchedulerNode::make_Advise(){
 	
 	time_setup_next_advise_ms=time_now();
 	next_time_advise_ms+=period_ms;
-	//Do advise
+	do_advise();
 }
 
 void SchedulerNode::do_Advise(){
@@ -46,7 +46,7 @@ void SchedulerNode::do_Advise(){
 		if(node->readMessage(msg))
 			messages->addMessageToReviewQueue(msg);
 		
-		if(time_now-init_time>=duration_advise_ms)
+		if(time_now()-init_time>=duration_advise_ms)
 			flag=false;
 	}
 	
@@ -57,6 +57,34 @@ void SchedulerNode::do_Advise(){
 	
 	node->closingServer();
 }
+
+	void SchedulerNode::do_Scan(unsigned long duration_ms){
+		unsigned long init_time=time_now();
+		bool flag=true;
+		int n;
+		unsigned long pointTime1;
+		unsigned long pointTime2;		
+		LinkedList<String> APs_filtered;		
+		node->upWiFi();
+
+		while(flag){
+			pointTime1=time_now();
+			n=node->scan(LinkedList<String> APs_filtered);
+			pointTime2=time_now();
+			for(int i=0;i<n;i++){
+				updateAP(APs_filtered.get(i),(pointTime2-pointTime1)/2);
+			}
+			if(time_now()-init_time>=duration_ms)
+				flag=false;
+		}
+		int n=node->scan(LinkedList<String> APs_filtered);
+		node->
+	}
+	
+	void SchedulerNode::make_Scan(){
+		scan=true;
+		time_scanned=0;
+	}
 
 unsigned long SchedulerNode::calculate_period(){
 	int number_tasks;
