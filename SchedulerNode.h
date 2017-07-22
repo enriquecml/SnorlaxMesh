@@ -20,6 +20,7 @@
 #define DURATION_SCAN_MS MAX_PERIOD_MS
 #define DURATION_ADVISE_MS 5000
 #define DURATION_RANDOM_TIME_ADVISE_MS 5000
+#define DURATION_SEND_MS 8000
 
 enum States{SETUP,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
 
@@ -51,6 +52,17 @@ private:
 	void make_Scan();
 	
 	void updateAP(String & sAP,unsigned long time_saw);
+	
+	//SEND
+	
+	bool send;
+	unsigned long next_time_send_ms;
+	unsigned long time_setup_next_send_ms;
+	unsigned long duration_send_ms;
+	bool time_of_send();
+	
+	void do_Send();
+	void make_Send();
 	
 	//List of Tasks of User
 	LinkedList<Task*> *tasks;

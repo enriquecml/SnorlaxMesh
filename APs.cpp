@@ -24,6 +24,10 @@ AP * APs::giveAP(String &sAP){
 	return NULL;	
 }
 
+AP * APs::giveAP(int position){
+	return list_APs.get(position);
+}
+
 int APs::numberAPs(){
 	return list_APs.size();
 }

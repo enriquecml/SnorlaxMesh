@@ -14,6 +14,7 @@ public:
 	APs();
 	void addAP(AP * ap);
 	AP * giveAP(String &sAP);
+	AP * giveAP(int position);
 	int numberAPs();
 	
 };

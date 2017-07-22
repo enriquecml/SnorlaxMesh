@@ -13,7 +13,10 @@ void SchedulerNode::machineStates(){
 			if(scan)
 				state=SCAN;
 			else
-				state=ACTIONS;
+				if(time_of_send())
+					state=SEND;
+				else
+					state=ACTIONS;
 		break;
 		case SCAN:
 			if(time_of_advise())
@@ -22,8 +25,15 @@ void SchedulerNode::machineStates(){
 		case ACTIONS:
 			if(time_of_advise())
 				state=ADVISE;
+			else
+				if(time_of_send())
+					state=SEND;
 		break;
 		case SEND:
+			if(time_of_advise())
+				state=ADVISE;
+			else	
+				state=ACTIONS;
 		break;
 		case SLEEP:
 		break;
@@ -46,9 +56,13 @@ void SchedulerNode::run(){
 			do_Scan();
 		break;
 		case ACTIONS:
-			
+			make_Send();
 		break;
 		case SEND:
+			do_Send();
+			if(listAPs->numberAPs()==0){
+				make_Scan();
+			}			
 		break;
 		case SLEEP:
 		break;		
@@ -136,9 +150,45 @@ void SchedulerNode::updateAP(String & sAP,unsigned long time_saw){
 		aux = new AP();
 		aux->ssid=String(sAP);
 		sAP.remove(0,sAP.indexOf('S')+1);
-		aux->period_s=sAP.toInt();
+		aux->period_s=1000*sAP.toInt();
 		aux->time_saw=time_saw;		
 		listAPs->addAP(aux);		
+	}
+}
+
+bool SchedulerNode::time_of_send(){
+	return time_now()-time_setup_next_send_ms>=time_setup_next_send_ms-next_time_send_ms && time_now()-time_setup_next_send_ms<=time_setup_next_send_ms-next_time_send_ms+duration_send_ms ;		
+}
+
+void SchedulerNode::do_Send(){
+	Serial.println(String("Sin implementar do_Send"));
+}
+
+void SchedulerNode::make_Send(){
+	if(send==false){
+		send=true;
+		//search next Send
+		AP *aux;
+		bool foundAP=false;
+		int n=listAPs->numberAPs();
+		
+		for(int i=0;i<n && !foundAP;i++){
+			aux=listAPs->giveAP(i);
+			if(aux->connected==false)
+				foundAP=true;
+		}
+		
+		if(!foundAP){
+			//Reset connected
+			for(int i=0;i<n;i++){
+				aux=listAPs->giveAP(i);
+				aux->connected=false;
+			}
+			aux=listAPs->giveAP(0);		
+		}
+		
+		next_time_send_ms=aux->period_s-((time_now()-aux->time_saw)%aux->period_s);
+		time_setup_next_send_ms=time_now();
 	}
 }
 
@@ -215,8 +265,9 @@ void SchedulerNode::TestLoadSave(){
 void SchedulerNode::Init(){
 	state=SETUP;
 	more_random_time_advise_ms=DURATION_RANDOM_TIME_ADVISE_MS;
-	duration_advise_ms=DURATION_RANDOM_TIME_ADVISE_MS;
+	duration_advise_ms=DURATION_ADVISE_MS;
 	duration_scan_ms=DURATION_SCAN_MS;
+	duration_send_ms=DURATION_SEND_MS;
 	period_ms=max(MIN_PERIOD_MS,calculate_period());
 	String ssid;
 	node->getSSID(ssid);
