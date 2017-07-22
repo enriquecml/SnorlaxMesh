@@ -44,9 +44,7 @@ void SchedulerNode::machineStates(){
 void SchedulerNode::run(){
 	switch(state){
 		case SETUP:
-			if(listAPs->numberAPs()==0){
-				make_Scan();
-			}
+			
 		break;
 		case ADVISE:
 			make_Advise();
@@ -56,13 +54,15 @@ void SchedulerNode::run(){
 			do_Scan();
 		break;
 		case ACTIONS:
-			make_Send();
+			if(listAPs->numberAPs()==0){
+				make_Scan();
+			}
+			else
+				make_Send();
 		break;
 		case SEND:
 			do_Send();
-			if(listAPs->numberAPs()==0){
-				make_Scan();
-			}			
+			send=false;		
 		break;
 		case SLEEP:
 		break;		
