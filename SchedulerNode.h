@@ -7,11 +7,19 @@
 #include <LinkedList.h>
 #include <FS.h>
 
+#include "Helper.h"
+
 #include "Task.h"
 
 #include "messageBroker.h"
-#include "AP.h"
+#include "APs.h"
 #include "broadcastNode.h"
+
+#define MIN_PERIOD_MS 30000
+#define MAX_PERIOD_MS 90000
+#define DURATION_SCAN_MS MAX_PERIOD_MS
+#define DURATION_ADVISE_MS 5000
+#define DURATION_RANDOM_TIME_ADVISE_MS 5000
 
 enum States{SETUP,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
 
@@ -38,8 +46,11 @@ private:
 	
 	bool scan;
 	unsigned long time_scanned;
+	unsigned long duration_scan_ms;
 	void do_Scan();
 	void make_Scan();
+	
+	void updateAP(String & sAP,unsigned long time_saw);
 	
 	//List of Tasks of User
 	LinkedList<Task*> *tasks;
@@ -50,7 +61,7 @@ private:
 	
 	//List of APs
 	
-	LinkedList<AP*> *APs;
+	APs * listAPs;
 	
 	//Message Broker
 	
@@ -60,14 +71,6 @@ private:
 	
 	broadcastNode * node;
 	
-	//Methods set resources
-	void set_APs(LinkedList<AP*> *_APs);
-	
-	void set_messageBroker(messageBroker * _messages);
-	
-	void set_node(broadcastNode * _node);
-	
-	//
 	unsigned long calculate_period();	
 
 	unsigned long time_now();
@@ -81,7 +84,16 @@ private:
 	
 public:
 		SchedulerNode();
-
+		
+	//Methods set resources
+	void set_APs(APs *_listAPs);
+	
+	void set_messageBroker(messageBroker * _messages);
+	
+	void set_node(broadcastNode * _node);
+	
+	//
+	void run();
 	void TestLoadSave();
 	void Init();
 	

@@ -6,10 +6,18 @@ SchedulerNode::SchedulerNode(){
 
 void SchedulerNode::machineStates(){
 	switch(state){
+		case SETUP:
+			state=ADVISE;
+		break;
 		case ADVISE:
-			state=ACTIONS;
+			if(scan)
+				state=SCAN;
+			else
+				state=ACTIONS;
 		break;
 		case SCAN:
+			if(time_of_advise())
+				state=ADVISE;
 		break;
 		case ACTIONS:
 			if(time_of_advise())
@@ -18,8 +26,34 @@ void SchedulerNode::machineStates(){
 		case SEND:
 		break;
 		case SLEEP:
+		break;
+		
+	}
+}
+
+void SchedulerNode::run(){
+	switch(state){
+		case SETUP:
+			if(listAPs->numberAPs()==0){
+				make_Scan();
+			}
+		break;
+		case ADVISE:
+			make_Advise();
+			do_Advise();
+		break;
+		case SCAN:
+			do_Scan();
+		break;
+		case ACTIONS:
+			
+		break;
+		case SEND:
+		break;
+		case SLEEP:
 		break;		
 	}
+	machineStates();
 }
 
 
@@ -28,7 +62,6 @@ void SchedulerNode::make_Advise(){
 	
 	time_setup_next_advise_ms=time_now();
 	next_time_advise_ms+=period_ms;
-	do_advise();
 }
 
 void SchedulerNode::do_Advise(){
@@ -37,7 +70,6 @@ void SchedulerNode::do_Advise(){
 	bool flag=true;
 	
 	node->upWiFi();
-	
 	node->modeAp();
 	node->initServer();	
 
@@ -48,43 +80,67 @@ void SchedulerNode::do_Advise(){
 		
 		if(time_now()-init_time>=duration_advise_ms)
 			flag=false;
+		yield();
 	}
 	
 	node->downWiFi();	
-	
 	while(node->readMessage(msg))
 		messages->addMessageToReviewQueue(msg);
 	
 	node->closingServer();
 }
 
-	void SchedulerNode::do_Scan(unsigned long duration_ms){
+void SchedulerNode::do_Scan(){
+
+	unsigned long duration_ms=min(substract(duration_scan_ms,time_scanned),substract(next_time_advise_ms,time_now()));
+	if(duration_ms!=0){
+		time_scanned+=duration_ms;				
 		unsigned long init_time=time_now();
 		bool flag=true;
 		int n;
+		String saux;
 		unsigned long pointTime1;
 		unsigned long pointTime2;		
 		LinkedList<String> APs_filtered;		
 		node->upWiFi();
 
 		while(flag){
+			APs_filtered.clear();		
 			pointTime1=time_now();
-			n=node->scan(LinkedList<String> APs_filtered);
+			n=node->scan(APs_filtered);
 			pointTime2=time_now();
 			for(int i=0;i<n;i++){
-				updateAP(APs_filtered.get(i),(pointTime2-pointTime1)/2);
+				saux=APs_filtered.get(i);
+				updateAP(saux,(pointTime2-pointTime1)/2);
 			}
 			if(time_now()-init_time>=duration_ms)
 				flag=false;
 		}
-		int n=node->scan(LinkedList<String> APs_filtered);
-		node->
+		node->downWiFi();
 	}
+	else{
+		scan=false;
+	}
+}
 	
-	void SchedulerNode::make_Scan(){
-		scan=true;
-		time_scanned=0;
+void SchedulerNode::make_Scan(){
+	scan=true;
+	time_scanned=0;
+}
+
+void SchedulerNode::updateAP(String & sAP,unsigned long time_saw){
+
+	AP * aux =listAPs->giveAP(sAP);
+	if(aux==NULL){
+		AP * aux;		
+		aux = new AP();
+		aux->ssid=String(sAP);
+		sAP.remove(0,sAP.indexOf('S')+1);
+		aux->period_s=sAP.toInt();
+		aux->time_saw=time_saw;		
+		listAPs->addAP(aux);		
 	}
+}
 
 unsigned long SchedulerNode::calculate_period(){
 	int number_tasks;
@@ -136,12 +192,11 @@ void SchedulerNode::load_configuration(){
 	Serial.println(line);
 	Serial.println("...");	
 	configFile.close();
-	SPIFFS.end();
-	
+	SPIFFS.end();	
 }
 
-void SchedulerNode::set_APs(LinkedList<AP*> *_APs){
-	APs=_APs;
+void SchedulerNode::set_APs(APs *_listAPs){
+	listAPs=_listAPs;
 }
 
 void SchedulerNode::set_messageBroker(messageBroker * _messages){
@@ -158,5 +213,13 @@ void SchedulerNode::TestLoadSave(){
 }
 
 void SchedulerNode::Init(){
-	
+	state=SETUP;
+	more_random_time_advise_ms=DURATION_RANDOM_TIME_ADVISE_MS;
+	duration_advise_ms=DURATION_RANDOM_TIME_ADVISE_MS;
+	duration_scan_ms=DURATION_SCAN_MS;
+	period_ms=max(MIN_PERIOD_MS,calculate_period());
+	String ssid;
+	node->getSSID(ssid);
+	ssid+=String("S")+String(period_ms/1000);
+	node->setSSID(ssid);
 }

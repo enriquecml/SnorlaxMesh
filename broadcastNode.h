@@ -4,7 +4,8 @@
 #include <ESP8266WiFi.h>
 #include <WiFiServer.h>
 #include <WiFiClient.h>
-
+#include <Arduino.h>
+#include <LinkedList.h>
 
 #define SSID_PREFIX      		"BN"
 #define SERVER_IP_ADDR			"192.168.4.1"
@@ -34,6 +35,9 @@ public:
   bool readMessage(String &msg);
   void closingServer();
   
+  int scan(LinkedList<String> &APs_filtered);
+  void getSSID(String &_ssid);
+  void setSSID(String &_ssid);
 };
 
 #endif

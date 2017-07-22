@@ -9,7 +9,6 @@ public:
   String ssid;
   int nTry;
   unsigned long time_saw;
-  unsigned long uncertainty;
   unsigned long rate;
   unsigned long period_s;
   bool connected;
