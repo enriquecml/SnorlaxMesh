@@ -38,6 +38,14 @@ public:
   int scan(LinkedList<String> &APs_filtered);
   void getSSID(String &_ssid);
   void setSSID(String &_ssid);
+  
+  
+  void tryConnect(String &_ssid);
+  bool Connected();
+  void InitClient();
+  void stopClient();
+  bool connectedToServer();
+  void sendToServer(String &_msg);
 };
 
 #endif

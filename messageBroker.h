@@ -16,6 +16,8 @@ public:
 
   messageBroker();
   void addMessageToReviewQueue(String &msg);
+  int sizeOfMessagesReadyToSend();
+  void getMessageReadyToSend(int position,String &_msg);
 };
 
 #endif

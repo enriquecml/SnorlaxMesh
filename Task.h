@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 
-#define DEBUG 1
 class Task{
 
 public:

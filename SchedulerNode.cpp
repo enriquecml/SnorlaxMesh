@@ -157,11 +157,53 @@ void SchedulerNode::updateAP(String & sAP,unsigned long time_saw){
 }
 
 bool SchedulerNode::time_of_send(){
-	return time_now()-time_setup_next_send_ms>=time_setup_next_send_ms-next_time_send_ms && time_now()-time_setup_next_send_ms<=time_setup_next_send_ms-next_time_send_ms+duration_send_ms ;		
+	return send && time_now()-time_setup_next_send_ms>=time_setup_next_send_ms-next_time_send_ms;		
+}
+
+bool SchedulerNode::nextMessageToSend(String &_msg){
+	AP * aux =listAPs->giveAP(ssid_to_send);
+	int position=aux->positionMessage;
+	if(position<messages->sizeOfMessagesReadyToSend()){
+		messages->getMessageReadyToSend(position,_msg);
+		aux->positionMessage++;
+		return true;
+	}
+	return false;	
 }
 
 void SchedulerNode::do_Send(){
-	Serial.println(String("Sin implementar do_Send"));
+
+	unsigned long duration_ms=min(substract(duration_send_ms,time_sending),substract(next_time_advise_ms,time_now()));
+	if(duration_ms!=0){
+		time_sending+=duration_ms;				
+		unsigned long init_time=time_now();
+		
+		String msg;
+		bool flag=true;
+		
+		node->upWiFi();
+		node->tryConnect(ssid_to_send);
+		while(flag){
+			if(node->Connected()){
+				if(node->connectedToServer()){
+					if(nextMessageToSend(msg)){
+						node->sendToServer(msg);
+					}
+				}
+				else{
+					node->InitClient();
+				}
+			}
+			if(time_now()-init_time>=duration_ms)
+				flag=false;
+			yield();
+		}
+		node->stopClient();
+		node->downWiFi();
+	}
+	else{
+		send=false;
+	}
 }
 
 void SchedulerNode::make_Send(){
@@ -186,9 +228,13 @@ void SchedulerNode::make_Send(){
 			}
 			aux=listAPs->giveAP(0);		
 		}
-		
+		ssid_to_send=aux->ssid;
+		time_sending=0;
+		time_setup_next_send_ms=time_now();		
 		next_time_send_ms=aux->period_s-((time_now()-aux->time_saw)%aux->period_s);
-		time_setup_next_send_ms=time_now();
+		Serial.print("Milisegundos para enviar:");
+		Serial.println(next_time_send_ms);
+
 	}
 }
 
@@ -273,4 +319,5 @@ void SchedulerNode::Init(){
 	node->getSSID(ssid);
 	ssid+=String("S")+String(period_ms/1000);
 	node->setSSID(ssid);
+	send=false;
 }

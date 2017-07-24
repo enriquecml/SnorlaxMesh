@@ -15,7 +15,7 @@
 #include "APs.h"
 #include "broadcastNode.h"
 
-#define MIN_PERIOD_MS 30000
+#define MIN_PERIOD_MS 50000
 #define MAX_PERIOD_MS 90000
 #define DURATION_SCAN_MS MAX_PERIOD_MS
 #define DURATION_ADVISE_MS 5000
@@ -59,7 +59,11 @@ private:
 	unsigned long next_time_send_ms;
 	unsigned long time_setup_next_send_ms;
 	unsigned long duration_send_ms;
+	unsigned long time_sending;
 	bool time_of_send();
+	
+	String ssid_to_send;
+	bool nextMessageToSend(String &_msg);
 	
 	void do_Send();
 	void make_Send();

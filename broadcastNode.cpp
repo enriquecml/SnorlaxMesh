@@ -69,3 +69,29 @@ void broadcastNode::getSSID(String &_ssid){
 void broadcastNode::setSSID(String &_ssid){
 	ssid=_ssid;
 }
+
+void broadcastNode::tryConnect(String &_ssid){
+	WiFi.begin(_ssid.c_str());	
+}
+
+bool broadcastNode::Connected(){
+	return WiFi.isConnected();
+}
+
+void broadcastNode::InitClient(){
+	IPAddress ip(192, 168, 4, 1);
+	client.connect(ip, SERVER_PORT);
+}
+
+void broadcastNode::stopClient(){
+	client.flush();
+	client.stop();
+}
+
+bool broadcastNode::connectedToServer(){
+	return client.connected();	
+}
+
+void broadcastNode::sendToServer(String &_msg){
+	client.println(_msg);
+}
