@@ -8,7 +8,7 @@
 class tRemoveMessages: public Task{
 
 public:
-	tRemoveMessages();
+	tRemoveMessages(APs *_listAPs,messageBroker *_messages);
 	void execute();
 private:
 	APs * listAPs;

@@ -9,7 +9,7 @@
 class tReviewMessages: public Task{
 
 public:
-	tReviewMessages();
+	tReviewMessages(messageBroker * _messages,broadcastNode * _node);
 	void execute();
 private:
 

@@ -1,7 +1,8 @@
 #include "tRemoveMessages.h"
 
-tRemoveMessages::tRemoveMessages(){
-	
+tRemoveMessages::tRemoveMessages(APs *_listAPs,messageBroker *_messages){
+	listAPs=_listAPs;
+	messages=_messages;
 }
 
 void tRemoveMessages::execute(){

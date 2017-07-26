@@ -303,6 +303,10 @@ void SchedulerNode::set_node(broadcastNode * _node){
 	node=_node;
 }
 
+void SchedulerNode::set_tasks(LinkedList<Task*> *_tasks){
+	tasks=_tasks;
+}
+
 void SchedulerNode::TestLoadSave(){
 	save_configuration();
 	load_configuration();

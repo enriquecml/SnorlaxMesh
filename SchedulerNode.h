@@ -107,9 +107,11 @@ public:
 	void set_messageBroker(messageBroker * _messages);
 	
 	void set_node(broadcastNode * _node);
-	
+
+	void set_tasks(LinkedList<Task*> *_tasks);	
 	//
-	void run();
+	void run();	
+	
 	void TestLoadSave();
 	void Init();
 	

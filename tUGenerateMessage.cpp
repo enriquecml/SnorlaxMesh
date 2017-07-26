@@ -1,7 +1,9 @@
 #include "tUGenerateMessage.h"
 
-tUGenerateMessage::tUGenerateMessage(){
+tUGenerateMessage::tUGenerateMessage(messageBroker * _messages,broadcastNode * _node){
 	own_sequence=0;
+	messages=_messages;
+	node=_node;
 }
 
 void tUGenerateMessage::execute(){

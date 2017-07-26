@@ -1,7 +1,8 @@
 #include "tReviewMessages.h"
 
-tReviewMessages::tReviewMessages(){
-	
+tReviewMessages::tReviewMessages(messageBroker * _messages,broadcastNode * _node){
+	messages=_messages;
+	node=_node;	
 }
 
 bool tReviewMessages::wasHere(String &_msg){
