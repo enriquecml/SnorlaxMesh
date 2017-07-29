@@ -1,6 +1,8 @@
 #include "tReviewMessages.h"
 
 tReviewMessages::tReviewMessages(messageBroker * _messages,broadcastNode * _node){
+	duration_ms=0;
+	
 	messages=_messages;
 	node=_node;	
 }
@@ -46,7 +48,8 @@ void tReviewMessages::addNodeToMessage(String &_msg){
 
 void tReviewMessages::execute(){
 	String msg;
-	while(messages->sizeOfMessagesWithoutReview()>0){
+	int nmreview=messages->sizeOfMessagesWithoutReview();
+	while(nmreview>0){
 		messages->getMessageWithoutReview(0,msg);
 
 		if(!wasHere(msg) && !messages->existMessage(msg)){
@@ -55,5 +58,6 @@ void tReviewMessages::execute(){
 		}
 		
 	messages->removeMessageOfReviewQueue(0);
+	nmreview=messages->sizeOfMessagesWithoutReview();
 	}	
 }

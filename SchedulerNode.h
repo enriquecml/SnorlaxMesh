@@ -60,6 +60,7 @@ private:
 	unsigned long time_setup_next_send_ms;
 	unsigned long duration_send_ms;
 	unsigned long time_sending;
+	bool connectedToServer;
 	bool time_of_send();
 	
 	String ssid_to_send;
@@ -70,7 +71,7 @@ private:
 	
 	//List of Tasks of User
 	LinkedList<Task*> *tasks;
-
+	int iterator_task;
 	// Machine States
 	int state;
 	void machineStates();

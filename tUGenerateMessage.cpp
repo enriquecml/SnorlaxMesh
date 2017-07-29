@@ -1,12 +1,14 @@
 #include "tUGenerateMessage.h"
 
 tUGenerateMessage::tUGenerateMessage(messageBroker * _messages,broadcastNode * _node){
+	duration_ms=0;
 	own_sequence=0;
 	messages=_messages;
 	node=_node;
 }
 
 void tUGenerateMessage::execute(){
+	Serial.println("Generando Mensaje");
 	DynamicJsonBuffer jsonBuffer;
 
 	JsonObject& root = jsonBuffer.createObject();
@@ -21,9 +23,9 @@ void tUGenerateMessage::execute(){
 	root["n_ids"]=1;
 	
 	String ssid;
-	node->getSSID(ssid)
+	node->getSSID(ssid);
 	ids.add(ssid);
 	String msg;
 	root.printTo(msg);
-	messages_ready_to_send.add(msg);
+	messages->addMessageToSendQueue(msg);
 }

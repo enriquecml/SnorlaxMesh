@@ -25,9 +25,19 @@ void SchedulerNode::machineStates(){
 		case ACTIONS:
 			if(time_of_advise())
 				state=ADVISE;
-			else
+			else{
 				if(time_of_send())
 					state=SEND;
+				else{
+					Serial.print(iterator_task);
+					Serial.print("==");
+					Serial.println(tasks->size());
+					if(iterator_task==tasks->size()){
+						iterator_task=0;
+						state=SLEEP;
+					}
+				}
+			}
 		break;
 		case SEND:
 			if(time_of_advise())
@@ -36,6 +46,11 @@ void SchedulerNode::machineStates(){
 				state=ACTIONS;
 		break;
 		case SLEEP:
+			if(time_of_advise())
+				state=ADVISE;
+			else
+				if(time_of_send())
+					state=SEND;		
 		break;
 		
 	}
@@ -59,12 +74,20 @@ void SchedulerNode::run(){
 			}
 			else
 				make_Send();
+					Serial.print(iterator_task);
+					Serial.print("==");
+					Serial.println(tasks->size());				
+				tasks->get(iterator_task)->execute();
+				iterator_task++;
+				
 		break;
 		case SEND:
+			Serial.println("intentando enviar");
 			do_Send();
 			send=false;		
 		break;
 		case SLEEP:
+			
 		break;		
 	}
 	machineStates();
@@ -180,12 +203,12 @@ void SchedulerNode::do_Send(){
 		
 		String msg;
 		bool flag=true;
-		
 		node->upWiFi();
 		node->tryConnect(ssid_to_send);
 		while(flag){
 			if(node->Connected()){
 				if(node->connectedToServer()){
+					connectedToServer=true;
 					if(nextMessageToSend(msg)){
 						node->sendToServer(msg);
 					}
@@ -202,6 +225,18 @@ void SchedulerNode::do_Send(){
 		node->downWiFi();
 	}
 	else{
+		AP * aux=listAPs->giveAP(ssid_to_send);
+		//Update tries
+		if(!connectedToServer){
+			aux->nTry++;
+			if(aux->nTry==3){
+				
+			}
+		}
+		else{
+			aux->nTry=0;
+			aux->connected=true;			
+		}		
 		send=false;
 	}
 }
@@ -249,7 +284,10 @@ unsigned long SchedulerNode::calculate_period(){
 			amount_ms+=tasks->get(i)->duration_ms;
 		}
 	}
-	return amount_ms;
+	unsigned long ms=min(MAX_PERIOD_MS,max(MIN_PERIOD_MS,amount_ms));
+	Serial.print("Milisegundos del periodo");
+	Serial.println(ms);
+	return ms;
 }
 
 unsigned long SchedulerNode::time_now(){
@@ -318,10 +356,12 @@ void SchedulerNode::Init(){
 	duration_advise_ms=DURATION_ADVISE_MS;
 	duration_scan_ms=DURATION_SCAN_MS;
 	duration_send_ms=DURATION_SEND_MS;
-	period_ms=max(MIN_PERIOD_MS,calculate_period());
+	period_ms=calculate_period();
 	String ssid;
 	node->getSSID(ssid);
 	ssid+=String("S")+String(period_ms/1000);
 	node->setSSID(ssid);
 	send=false;
+	scan=false;
+	iterator_task=0;
 }

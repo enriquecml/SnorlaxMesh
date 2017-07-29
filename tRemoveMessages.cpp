@@ -1,6 +1,7 @@
 #include "tRemoveMessages.h"
 
 tRemoveMessages::tRemoveMessages(APs *_listAPs,messageBroker *_messages){
+	duration_ms=0;
 	listAPs=_listAPs;
 	messages=_messages;
 }

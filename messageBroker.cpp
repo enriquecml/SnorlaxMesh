@@ -20,13 +20,13 @@ void messageBroker::addMessageToReadQueue(String &msg){
 	messages_without_read.add(msg);
 } 
 
-void addMessageToSendQueue(String &msg){
+void messageBroker::addMessageToSendQueue(String &msg){
 	messages_ready_to_send.add(msg);
 }
 
 
 int messageBroker::sizeOfMessagesWithoutReview(){
-	messages_without_review.size();	
+	return messages_without_review.size();	
 }
 
 int messageBroker::sizeOfMessagesReadyToSend(){
@@ -43,9 +43,12 @@ void messageBroker::getMessageReadyToSend(int position,String &_msg){
 }
 
 bool messageBroker::messageInList(LinkedList<String> *listMessages,String &_msg){
+	String msg_cmp;
 	int n=listMessages->size();
+	Serial.println(n);
 	for(int i=0;i<n;i++){
-		if(_msg.equals(listMessages->get(i)))
+		msg_cmp=listMessages->get(i);
+		if(_msg.equals(msg_cmp))
 			return true;
 	}
 	return false;
