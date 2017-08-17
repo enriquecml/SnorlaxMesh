@@ -31,24 +31,44 @@ void broadcastNode::initServer(){
 }
 
 bool broadcastNode::readMessage(String &msg){
-	if(server.hasClient()){
-		client=server.available();
-		if(client.connected() && client.available()){
-			msg=client.readString();
-			if(msg.length()>0){
-				return true;
-			}
+			if(server.hasClient())
+			Serial.println("Encontrado cliente");
+	if(client.available()>0){
+		msg=client.readString();
+		if(msg.length()>0){
+			return true;
+		//}
 		}
+	}		
+	else{
+		//client.flush();
+		//client.stop();*/	
+		if(server.hasClient()){
+			//Serial.println("Encontrado cliente");
+			client=server.available();
+			//if(client.connected() && client.available()){
+				msg=client.readString();
+				if(msg.length()>0){
+					return true;
+				//}
+			}
+		}		
 	}
+
 	return false;
 }
 
-void broadcastNode::closingServer(){
+void broadcastNode::clearServer(){
 	while(server.hasClient()){
+		Serial.println("Encontrado cliente para cerrar");
 		client=server.available();
 		client.flush();
 		client.stop();		
 	}
+}
+
+void broadcastNode::closingServer(){
+		clearServer();
 		server.stop();	
 }
 

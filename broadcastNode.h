@@ -33,6 +33,7 @@ public:
   
   void initServer();
   bool readMessage(String &msg);
+void clearServer();
   void closingServer();
   
   int scan(LinkedList<String> &APs_filtered);
