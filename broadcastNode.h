@@ -20,6 +20,8 @@ private:
 	uint32_t chip_id;
 
 	WiFiClient client;
+	LinkedList<WiFiClient *> clients_connected;
+	int index_client_connected;
 	WiFiServer server;
 
 public:
@@ -33,6 +35,7 @@ public:
   
   void initServer();
   bool readMessage(String &msg);
+bool addNewClientConnection();  
 void clearServer();
   void closingServer();
   

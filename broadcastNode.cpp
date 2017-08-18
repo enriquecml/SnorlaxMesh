@@ -7,19 +7,19 @@ broadcastNode::broadcastNode():server(SERVER_PORT)
  	WiFi.persistent(false);
 	downWiFi();	
 	chip_id = ESP.getChipId();
-	ssid = String( String( SSID_PREFIX ) + String( chip_id ) );  
+	ssid = String( String( SSID_PREFIX ) + String( chip_id ) ); 
+	index_client_connected=0;	
 }
 
 void broadcastNode::upWiFi(){
 	WiFi.forceSleepWake();
-		delay(1);
+	delay(1);
 }
 
 void broadcastNode::downWiFi(){
-WiFi.disconnect(true); 
-WiFi.forceSleepBegin();
-		delay(1);
-
+	WiFi.disconnect(true); 
+	WiFi.forceSleepBegin();
+	delay(1);
 }
   
 void broadcastNode::modeAp(){
@@ -30,41 +30,43 @@ void broadcastNode::initServer(){
 	server.begin();
 }
 
-bool broadcastNode::readMessage(String &msg){
-			if(server.hasClient())
-			Serial.println("Encontrado cliente");
-	if(client.available()>0){
-		msg=client.readString();
-		if(msg.length()>0){
-			return true;
-		//}
-		}
-	}		
-	else{
-		//client.flush();
-		//client.stop();*/	
-		if(server.hasClient()){
-			//Serial.println("Encontrado cliente");
-			client=server.available();
-			//if(client.connected() && client.available()){
-				msg=client.readString();
-				if(msg.length()>0){
-					return true;
-				//}
-			}
-		}		
+bool broadcastNode::addNewClientConnection(){
+	WiFiClient * new_client;
+	if(server.hasClient()){
+		new_client=new WiFiClient();
+		*new_client=server.available();
+		clients_connected.add(new_client);
+		return true;
 	}
+	return false;
+}
 
+bool broadcastNode::readMessage(String &msg){
+	if(clients_connected.size()>0){
+	WiFiClient * aux_client=clients_connected.get(index_client_connected);
+	index_client_connected++;
+	if(index_client_connected==clients_connected.size())
+		index_client_connected=0;
+	if(aux_client->available()>0){
+		msg=aux_client->readString();
+		if(msg.length()>0){				
+			return true;
+		}
+	}	
+	}
 	return false;
 }
 
 void broadcastNode::clearServer(){
-	while(server.hasClient()){
-		Serial.println("Encontrado cliente para cerrar");
-		client=server.available();
-		client.flush();
-		client.stop();		
+	WiFiClient * aux_client;
+	for(int i=0;i<clients_connected.size();i++){
+		aux_client=clients_connected.get(i);
+		aux_client->flush();
+		aux_client->stop();			
+		delete(aux_client);
+		clients_connected.remove(i);	
 	}
+	
 }
 
 void broadcastNode::closingServer(){
