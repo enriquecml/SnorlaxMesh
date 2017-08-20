@@ -7,6 +7,7 @@
 #include "tReviewMessages.h"
 #include "tGenerateRateMessage.h"
 #include "tReadRateMessage.h"
+#include "tGenerateStatsMessage.h"
 #include "tUGenerateMessage.h"
 class SnorlaxMesh{
 
