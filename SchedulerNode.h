@@ -14,13 +14,14 @@
 #include "messageBroker.h"
 #include "APs.h"
 #include "broadcastNode.h"
+#include "SingletonStats.h"
 
-#define MIN_PERIOD_MS 50000
+#define MIN_PERIOD_MS 70000
 #define MAX_PERIOD_MS 90000
 #define DURATION_SCAN_MS MAX_PERIOD_MS
-#define DURATION_ADVISE_MS 5000
-#define DURATION_RANDOM_TIME_ADVISE_MS 5000
-#define DURATION_SEND_MS 8000
+#define DURATION_ADVISE_MS 10000
+#define DURATION_RANDOM_TIME_ADVISE_MS 10000
+#define DURATION_SEND_MS 10000
 
 enum States{SETUP,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
 
@@ -44,7 +45,7 @@ private:
 	void make_Advise();
 	
 	//Scan
-	
+	bool lostConnection;
 	bool scan;
 	unsigned long time_scanned;
 	unsigned long duration_scan_ms;

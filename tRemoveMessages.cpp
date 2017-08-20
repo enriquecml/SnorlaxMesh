@@ -15,6 +15,7 @@ void tRemoveMessages::execute(){
 				cantRemove=true;
 		}
 		if(cantRemove==false){
+			SingletonStats::instance()->n_messages_removed++;
 			messages->removeMessageOfReadyToSendQueue(0);
 			for(int i=0;i<n;i++){
 				listAPs->giveAP(i)->positionMessage--;

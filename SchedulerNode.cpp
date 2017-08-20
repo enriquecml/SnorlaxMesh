@@ -29,11 +29,12 @@ void SchedulerNode::machineStates(){
 				if(time_of_send())
 					state=SEND;
 				else{
-					Serial.print(iterator_task);
-					Serial.print("==");
-					Serial.println(tasks->size());
+					//Serial.print(iterator_task);
+					//Serial.print("==");
+					//Serial.println(tasks->size());
 					if(iterator_task==tasks->size()){
 						iterator_task=0;
+						SingletonStats::instance()->n_sleeps++;						
 						state=SLEEP;
 					}
 				}
@@ -69,22 +70,23 @@ void SchedulerNode::run(){
 			do_Scan();
 		break;
 		case ACTIONS:
-			if(listAPs->numberAPs()==0){
+			if(listAPs->numberAPs()==0 || lostConnection){
 				make_Scan();
 			}
 			else
 				make_Send();
 					Serial.print(iterator_task);
 					Serial.print("==");
-					Serial.println(tasks->size());				
+					Serial.println(tasks->size());
+				if(iterator_task<tasks->size()){
+					
 				tasks->get(iterator_task)->execute();
-				iterator_task++;
+				iterator_task++;}
 				
 		break;
 		case SEND:
 			Serial.println("intentando enviar");
-			do_Send();
-			send=false;		
+			do_Send();	
 		break;
 		case SLEEP:
 			
@@ -98,11 +100,13 @@ void SchedulerNode::run(){
 void SchedulerNode::make_Advise(){
 	
 	time_setup_next_advise_ms=time_now();
-	next_time_advise_ms+=period_ms;
+	next_time_advise_ms=time_setup_next_advise_ms+period_ms;
 }
 
 void SchedulerNode::do_Advise(){
 	unsigned long init_time=time_now();
+	randomSeed(ESP.getChipId());
+	unsigned long timeAdvise=duration_advise_ms+random(more_random_time_advise_ms);
 	String msg;
 	bool flag=true;
 	
@@ -111,11 +115,13 @@ void SchedulerNode::do_Advise(){
 	node->initServer();	
 
 	while(flag){
-		
-		if(node->readMessage(msg))
+		node->addNewClientConnection();
+		if(node->readMessage(msg)){
 			messages->addMessageToReviewQueue(msg);
+			SingletonStats::instance()->n_messages_received++;
+		}
 		
-		if(time_now()-init_time>=duration_advise_ms)
+		if(time_now()-init_time>=timeAdvise)
 			flag=false;
 		yield();
 	}
@@ -157,30 +163,34 @@ void SchedulerNode::do_Scan(){
 	}
 	else{
 		scan=false;
+		lostConnection=false;
 	}
 }
 	
 void SchedulerNode::make_Scan(){
 	scan=true;
 	time_scanned=0;
+	SingletonStats::instance()->n_scanned++;
 }
 
 void SchedulerNode::updateAP(String & sAP,unsigned long time_saw){
-
+	Serial.print("actualizar AP:");
+	Serial.println(sAP);
 	AP * aux =listAPs->giveAP(sAP);
-	if(aux==NULL){
-		AP * aux;		
+	if(aux==NULL){		
 		aux = new AP();
 		aux->ssid=String(sAP);
 		sAP.remove(0,sAP.indexOf('S')+1);
-		aux->period_s=1000*sAP.toInt();
-		aux->time_saw=time_saw;		
-		listAPs->addAP(aux);		
+		aux->period_s=1000*sAP.toInt();		
+		listAPs->addAP(aux);
+		aux->time_saw=time_saw;
+		aux->nTry=0;		
 	}
+
 }
 
 bool SchedulerNode::time_of_send(){
-	return send && time_now()-time_setup_next_send_ms>=time_setup_next_send_ms-next_time_send_ms;		
+	return send && time_now()-time_setup_next_send_ms>=next_time_send_ms;		
 }
 
 bool SchedulerNode::nextMessageToSend(String &_msg){
@@ -196,7 +206,11 @@ bool SchedulerNode::nextMessageToSend(String &_msg){
 
 void SchedulerNode::do_Send(){
 
-	unsigned long duration_ms=min(substract(duration_send_ms,time_sending),substract(next_time_advise_ms,time_now()));
+	unsigned long time_to_advise=substract(next_time_advise_ms,time_now());
+	Serial.print(String("tiempo hasta el siguiente modo AP:"));
+	Serial.println(time_to_advise);
+	unsigned long left_time=substract(duration_send_ms,time_sending);
+	unsigned long duration_ms=min(left_time,time_to_advise);
 	if(duration_ms!=0){
 		time_sending+=duration_ms;				
 		unsigned long init_time=time_now();
@@ -210,6 +224,7 @@ void SchedulerNode::do_Send(){
 				if(node->connectedToServer()){
 					connectedToServer=true;
 					if(nextMessageToSend(msg)){
+						SingletonStats::instance()->n_messages_sent++;							
 						node->sendToServer(msg);
 					}
 				}
@@ -224,21 +239,28 @@ void SchedulerNode::do_Send(){
 		node->stopClient();
 		node->downWiFi();
 	}
-	else{
+	
+	if(time_sending==duration_send_ms){
+		Serial.println(String("Cerrando envio"));
 		AP * aux=listAPs->giveAP(ssid_to_send);
 		//Update tries
 		if(!connectedToServer){
+			SingletonStats::instance()->n_failed_connections++;							
 			aux->nTry++;
 			if(aux->nTry==3){
-				
+				lostConnection=true;
+				listAPs->removeAP(ssid_to_send);
 			}
 		}
 		else{
 			aux->nTry=0;
 			aux->connected=true;			
-		}		
+		}
+		SingletonStats::instance()->n_try_connections++;	
+		connectedToServer=false;	
 		send=false;
 	}
+	
 }
 
 void SchedulerNode::make_Send(){
@@ -363,5 +385,7 @@ void SchedulerNode::Init(){
 	node->setSSID(ssid);
 	send=false;
 	scan=false;
+	lostConnection=false;
+	connectedToServer=false;	
 	iterator_task=0;
 }

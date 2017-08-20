@@ -18,6 +18,7 @@ public:
 	AP * giveAP(int position);
 	
 	int numberAPs();
+	void removeAP(String &ssid);
 	
 };
 

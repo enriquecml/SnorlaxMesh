@@ -4,6 +4,7 @@
 #include "Task.h"
 #include "messageBroker.h"
 #include "APs.h"
+#include "SingletonStats.h"
 
 class tRemoveMessages: public Task{
 

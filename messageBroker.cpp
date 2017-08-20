@@ -20,13 +20,23 @@ void messageBroker::addMessageToReadQueue(String &msg){
 	messages_without_read.add(msg);
 } 
 
+void messageBroker::removeMessageOfReadQueue(int position){
+	messages_without_read.remove(position);
+}
+
 void messageBroker::addMessageToSendQueue(String &msg){
 	messages_ready_to_send.add(msg);
 }
-
+void messageBroker::addMessageToSendQueue(int position,String &msg){
+	messages_ready_to_send.add(position,msg);
+}
 
 int messageBroker::sizeOfMessagesWithoutReview(){
 	return messages_without_review.size();	
+}
+
+int messageBroker::sizeOfMessagesWithoutRead(){
+	return messages_without_read.size();	
 }
 
 int messageBroker::sizeOfMessagesReadyToSend(){
@@ -36,6 +46,10 @@ int messageBroker::sizeOfMessagesReadyToSend(){
 
 void messageBroker::getMessageWithoutReview(int position,String &_msg){
 	_msg=messages_without_review.get(position);
+}
+
+void messageBroker::getMessageWithoutRead(int position,String &_msg){
+	_msg=messages_without_read.get(position);
 }
 
 void messageBroker::getMessageReadyToSend(int position,String &_msg){
@@ -55,5 +69,9 @@ bool messageBroker::messageInList(LinkedList<String> *listMessages,String &_msg)
 }
 
 bool messageBroker::existMessage(String &_msg){
-	return messageInList(&messages_without_review,_msg) || messageInList(&messages_without_read,_msg) || messageInList(&messages_ready_to_send,_msg);
+	if( messageInList(&messages_without_review,_msg) || messageInList(&messages_without_read,_msg) || messageInList(&messages_ready_to_send,_msg)){
+		SingletonStats::instance()->n_messages_repeatly++;		
+		return true;
+	}
+	return false;
 }

@@ -5,6 +5,7 @@
 #include "messageBroker.h"
 #include "broadcastNode.h"
 #include <ArduinoJson.h>
+#include "SingletonStats.h"
 
 class tReviewMessages: public Task{
 

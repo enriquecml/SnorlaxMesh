@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <LinkedList.h>
+#include "SingletonStats.h"
 
 class messageBroker{
 
@@ -22,12 +23,16 @@ public:
   void removeMessageOfReadyToSendQueue(int position);
 
   void addMessageToReadQueue(String &msg);
+  void removeMessageOfReadQueue(int position);  
   void addMessageToSendQueue(String &msg);
+  void addMessageToSendQueue(int position,String &msg);  
   int sizeOfMessagesWithoutReview();
 
+  int sizeOfMessagesWithoutRead();
   
   int sizeOfMessagesReadyToSend();
   void getMessageWithoutReview(int position,String &_msg);
+  void getMessageWithoutRead(int position,String &_msg);
   void getMessageReadyToSend(int position,String &_msg);
 
   bool existMessage(String &_msg);

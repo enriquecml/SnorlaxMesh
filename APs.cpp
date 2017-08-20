@@ -48,4 +48,11 @@ int APs::givePositionAP(String &sAP){
 int APs::numberAPs(){
 	return list_APs.size();
 }
+
+void APs::removeAP(String &ssid){
+	int position_ap=givePositionAP(ssid);
+	AP * aux=giveAP(position_ap);
+	delete(aux);
+	list_APs.remove(position_ap);	
+}
 	

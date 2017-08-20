@@ -17,7 +17,7 @@ void broadcastNode::upWiFi(){
 }
 
 void broadcastNode::downWiFi(){
-	WiFi.disconnect(true); 
+	WiFi.mode(WIFI_OFF); 
 	WiFi.forceSleepBegin();
 	delay(1);
 }

@@ -20,6 +20,7 @@ bool tReviewMessages::wasHere(String &_msg){
 	for(int i=0;i<n_ids;i++){
 		ssid2=root["ids"][i];
 		if(ssid.equals(ssid2)){
+			SingletonStats::instance()->n_messages_wasHere++;			
 			return true;		
 		}
 	}
