@@ -1,15 +1,16 @@
 #include "SchedulerNode.h"
 
 SchedulerNode::SchedulerNode(){
-	DEBUG_SNORLAX(Serial.println(String("Ejemplo debug")));
+
 }
 
 void SchedulerNode::machineStates(){
 	switch(state){
 		case SETUP:
-			state=ADVISE;
+			state=ADVISE;			
 		break;
 		case ADVISE:
+		
 			if(scan)
 				state=SCAN;
 			else
@@ -23,30 +24,32 @@ void SchedulerNode::machineStates(){
 				state=ADVISE;
 		break;
 		case ACTIONS:
-			if(time_of_advise())
+		
+			if(time_of_advise()){
 				state=ADVISE;
+			}
 			else{
 				if(time_of_send())
 					state=SEND;
 				else{
-					//Serial.print(iterator_task);
-					//Serial.print("==");
-					//Serial.println(tasks->size());
 					if(iterator_task==tasks->size()){
-
+						
 						SingletonStats::instance()->n_sleeps++;						
 						state=SLEEP;
+						messages->show_queues();
 					}
 				}
 			}
 		break;
 		case SEND:
+		
 			if(time_of_advise())
 				state=ADVISE;
 			else	
 				state=ACTIONS;
 		break;
 		case SLEEP:
+		
 			if(time_of_advise())
 				state=ADVISE;
 			else
@@ -58,20 +61,24 @@ void SchedulerNode::machineStates(){
 }
 
 void SchedulerNode::run(){
+	
 	switch(state){
 		case SETUP:
 			
 		break;
 		case ADVISE:
+		
 			make_Advise();
 			do_Advise();
 			make_new_send=true;
 			iterator_task=0;			
 		break;
 		case SCAN:
+		
 			do_Scan();
 		break;
 		case ACTIONS:
+		
 			if(listAPs->numberAPs()==0 || lostConnection){
 				make_Scan();
 			}
@@ -86,8 +93,7 @@ void SchedulerNode::run(){
 				iterator_task++;}
 				
 		break;
-		case SEND:
-			Serial.println("intentando enviar");
+		case SEND:		
 			do_Send();	
 		break;
 		case SLEEP:
@@ -95,19 +101,26 @@ void SchedulerNode::run(){
 		break;		
 	}
 	machineStates();
+	
 }
 
 
 
 void SchedulerNode::make_Advise(){
-	
+
 	time_setup_next_advise_ms=time_now();
 	next_time_advise_ms=time_setup_next_advise_ms+period_ms;
+	
 }
 
 void SchedulerNode::do_Advise(){
+	
 	unsigned long init_time=time_now();
-	unsigned long timeAdvise=duration_advise_ms+ESP8266TrueRandom.random(more_random_time_advise_ms);
+	DEBUG_SNORLAX_SCHEDULERNODE(Serial.print(String("init_time:")));
+	DEBUG_SNORLAX_SCHEDULERNODE(Serial.println(init_time));	
+	unsigned long timeAdvise=duration_advise_ms+ESP8266TrueRandom.random(2)*more_random_time_advise_ms;
+	DEBUG_SNORLAX_SCHEDULERNODE(Serial.print(String("timeAdvise:")));
+	DEBUG_SNORLAX_SCHEDULERNODE(Serial.println(timeAdvise));		
 	String msg;
 	bool flag=true;
 	
@@ -191,7 +204,7 @@ void SchedulerNode::updateAP(String & sAP,unsigned long time_saw){
 }
 
 bool SchedulerNode::time_of_send(){
-	return send && time_now()-time_setup_next_send_ms>=next_time_send_ms;		
+	return send && time_now()-time_setup_next_send_ms>=next_time_send_ms;
 }
 
 bool SchedulerNode::nextMessageToSend(String &_msg){
@@ -326,7 +339,7 @@ unsigned long SchedulerNode::time_now(){
 }
 
 bool SchedulerNode::time_of_advise(){
-	return time_now()-time_setup_next_advise_ms>=period_ms;	
+	return time_now()-time_setup_next_advise_ms>=period_ms;
 }
 
 void SchedulerNode::save_configuration(){

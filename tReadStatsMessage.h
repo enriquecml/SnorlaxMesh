@@ -5,6 +5,11 @@
 #include <ArduinoJson.h>
 #include "messageBroker.h"
 
+#define DEBUG_SNORLAX_READSTATSMESSAGE 1
+#ifdef  DEBUG_SNORLAX_READSTATSMESSAGE
+#define DEBUG_SNORLAX_READSTATSMESSAGE(...) __VA_ARGS__
+#endif
+
 class tReadStatsMessage: public Task{
 
 public:

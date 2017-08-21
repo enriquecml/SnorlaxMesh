@@ -75,3 +75,29 @@ bool messageBroker::existMessage(String &_msg){
 	}
 	return false;
 }
+
+void messageBroker::show_queues(){
+	String msg;
+	Serial.println(String("MENSAJES SIN REVISAR"));
+	for(int i=0;i<messages_without_review.size();i++){
+		getMessageWithoutReview(i,msg);
+		Serial.println(msg);
+		yield();
+	}
+	Serial.println(String("MENSAJES SIN LEER"));
+	
+	for(int i=0;i<messages_without_read.size();i++){
+		getMessageWithoutRead(i,msg);
+		Serial.println(msg);
+		yield();
+	}
+	Serial.println(String("MENSAJES SIN ENVIAR"));
+	
+	for(int i=0;i<messages_ready_to_send.size();i++){
+		getMessageReadyToSend(i,msg);
+		Serial.println(msg);
+		yield();
+	}
+	Serial.println(String("**-------***"));
+	
+}

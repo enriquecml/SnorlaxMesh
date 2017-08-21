@@ -29,6 +29,9 @@ bool tReviewMessages::wasHere(String &_msg){
 }
 
 void tReviewMessages::addNodeToMessage(String &_msg){
+	DEBUG_SNORLAX_REVIEWMESSAGES(Serial.print(String("Mensaje antes de añadirle nuestro nodo:")));		
+	DEBUG_SNORLAX_REVIEWMESSAGES(Serial.println(_msg));		
+
 	DynamicJsonBuffer jsonBuffer;
 	JsonObject& root = jsonBuffer.parseObject(_msg);
 	JsonArray& ids = root["ids"];
@@ -44,6 +47,8 @@ void tReviewMessages::addNodeToMessage(String &_msg){
 
 	_msg=String("");
 	root.printTo(_msg);
+	DEBUG_SNORLAX_REVIEWMESSAGES(Serial.print(String("Mensaje despues de añadirle nuestro nodo:")));		
+	DEBUG_SNORLAX_REVIEWMESSAGES(Serial.println(_msg));	
 }
 
 
@@ -52,9 +57,6 @@ void tReviewMessages::execute(){
 	int nmreview=messages->sizeOfMessagesWithoutReview();
 	while(nmreview>0){
 		messages->getMessageWithoutReview(0,msg);
-		Serial.print(String("Mensaje a revisar:"));
-		Serial.println(nmreview);		
-		Serial.println(msg);
 		if(!wasHere(msg) && !messages->existMessage(msg)){
 			addNodeToMessage(msg);
 			messages->addMessageToReadQueue(msg);

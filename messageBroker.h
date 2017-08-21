@@ -37,6 +37,8 @@ public:
 
   bool existMessage(String &_msg);
   
+  void show_queues();
+  
 };
 
 #endif
