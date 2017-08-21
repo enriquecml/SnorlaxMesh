@@ -1,7 +1,7 @@
 #include "SchedulerNode.h"
 
 SchedulerNode::SchedulerNode(){
-
+	DEBUG_SNORLAX(Serial.println(String("Ejemplo debug")));
 }
 
 void SchedulerNode::machineStates(){
