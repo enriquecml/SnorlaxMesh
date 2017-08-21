@@ -1,7 +1,7 @@
 #include "SchedulerNode.h"
 
 SchedulerNode::SchedulerNode(){
-	
+
 }
 
 void SchedulerNode::machineStates(){
@@ -33,7 +33,7 @@ void SchedulerNode::machineStates(){
 					//Serial.print("==");
 					//Serial.println(tasks->size());
 					if(iterator_task==tasks->size()){
-						iterator_task=0;
+
 						SingletonStats::instance()->n_sleeps++;						
 						state=SLEEP;
 					}
@@ -65,6 +65,8 @@ void SchedulerNode::run(){
 		case ADVISE:
 			make_Advise();
 			do_Advise();
+			make_new_send=true;
+			iterator_task=0;			
 		break;
 		case SCAN:
 			do_Scan();
@@ -105,8 +107,7 @@ void SchedulerNode::make_Advise(){
 
 void SchedulerNode::do_Advise(){
 	unsigned long init_time=time_now();
-	randomSeed(ESP.getChipId());
-	unsigned long timeAdvise=duration_advise_ms+random(more_random_time_advise_ms);
+	unsigned long timeAdvise=duration_advise_ms+ESP8266TrueRandom.random(more_random_time_advise_ms);
 	String msg;
 	bool flag=true;
 	
@@ -264,8 +265,9 @@ void SchedulerNode::do_Send(){
 }
 
 void SchedulerNode::make_Send(){
-	if(send==false){
-		send=true;
+	if(send==false && make_new_send==true){
+		make_new_send=false;		
+
 		//search next Send
 		AP *aux;
 		bool foundAP=false;
@@ -285,13 +287,20 @@ void SchedulerNode::make_Send(){
 			}
 			aux=listAPs->giveAP(0);		
 		}
-		ssid_to_send=aux->ssid;
-		time_sending=0;
-		time_setup_next_send_ms=time_now();		
-		next_time_send_ms=aux->period_s-((time_now()-aux->time_saw)%aux->period_s);
-		Serial.print("Milisegundos para enviar:");
-		Serial.println(next_time_send_ms);
-
+		if(0!=ESP8266TrueRandom.random(aux->rate)){
+			send=false;			
+		}
+		else{
+			send=true;
+			time_sending=DURATION_SEND_MS;		
+			ssid_to_send=aux->ssid;
+			time_sending=0;
+			time_setup_next_send_ms=time_now();		
+			next_time_send_ms=aux->period_s-((time_now()-aux->time_saw)%aux->period_s);
+			Serial.print("Milisegundos para enviar:");
+			Serial.println(next_time_send_ms);			
+		}
+			
 	}
 }
 

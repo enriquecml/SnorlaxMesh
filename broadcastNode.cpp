@@ -48,7 +48,11 @@ bool broadcastNode::readMessage(String &msg){
 	if(index_client_connected==clients_connected.size())
 		index_client_connected=0;
 	if(aux_client->available()>0){
-		msg=aux_client->readString();
+		Serial.println(String("Anterior Mensaje"));
+		Serial.println(msg);
+		Serial.println(String("Mensaje recibido"));
+		msg=aux_client->readStringUntil('\n');
+		Serial.println(msg);		
 		if(msg.length()>0){				
 			return true;
 		}

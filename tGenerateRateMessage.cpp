@@ -37,18 +37,24 @@ void tGenerateRateMessage::execute(){
 		msg=String("");
 		messages->getMessageReadyToSend(i,msg);
 		if(isMessageOwnAboutRate(msg)){
+			Serial.println(String("indice"));
+			Serial.println(i);
 			found=true;
+			i--;
 		}
 	}
 	DynamicJsonBuffer jsonBuffer;
 
+	msg=String("");
 	JsonObject& root = jsonBuffer.createObject();
-	root["rate"]=aps->numberAPs();
+	root["rate"]=SingletonStats::instance()->n_messages_received/(SingletonStats::instance()->n_messages_removed +1); //aps->numberAPs();
 	root["channel"]=String("_RATE");
 	String ssid;
 	node->getSSID(ssid);
 	root["id"]=String(ssid);
 	root.printTo(msg);	
+			Serial.println(String("indice"));
+			Serial.println(i);	
 	if(found){
 		messages->addMessageToSendQueue(i,msg);
 	}

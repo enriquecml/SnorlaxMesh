@@ -8,6 +8,8 @@
 #include "tGenerateRateMessage.h"
 #include "tReadRateMessage.h"
 #include "tGenerateStatsMessage.h"
+#include "tReadStatsMessage.h"
+
 #include "tUGenerateMessage.h"
 class SnorlaxMesh{
 

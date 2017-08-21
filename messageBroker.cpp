@@ -28,7 +28,7 @@ void messageBroker::addMessageToSendQueue(String &msg){
 	messages_ready_to_send.add(msg);
 }
 void messageBroker::addMessageToSendQueue(int position,String &msg){
-	messages_ready_to_send.add(position,msg);
+	messages_ready_to_send.set(position,msg);
 }
 
 int messageBroker::sizeOfMessagesWithoutReview(){
@@ -69,7 +69,7 @@ bool messageBroker::messageInList(LinkedList<String> *listMessages,String &_msg)
 }
 
 bool messageBroker::existMessage(String &_msg){
-	if( messageInList(&messages_without_review,_msg) || messageInList(&messages_without_read,_msg) || messageInList(&messages_ready_to_send,_msg)){
+	if( messageInList(&messages_without_read,_msg) || messageInList(&messages_ready_to_send,_msg)){
 		SingletonStats::instance()->n_messages_repeatly++;		
 		return true;
 	}

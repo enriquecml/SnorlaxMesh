@@ -30,11 +30,12 @@ bool tReadRateMessage::isMessageRate(String &_msg){
 void tReadRateMessage::execute(){
 	
 	String msg;
-	for(int i=0;i<messages->sizeOfMessagesWithoutRead();i++){
+	bool found=false;
+	for(int i=0;i<messages->sizeOfMessagesWithoutRead() && !found;i++){
 		messages->getMessageWithoutRead(i,msg);
 		if(isMessageRate(msg)){
 			messages->removeMessageOfReadQueue(i);
-			break;
+			found=true;
 		}
 	}
 

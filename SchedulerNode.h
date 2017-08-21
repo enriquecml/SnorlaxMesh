@@ -15,13 +15,14 @@
 #include "APs.h"
 #include "broadcastNode.h"
 #include "SingletonStats.h"
+#include "ESP8266TrueRandom.h"
 
 #define MIN_PERIOD_MS 70000
 #define MAX_PERIOD_MS 90000
 #define DURATION_SCAN_MS MAX_PERIOD_MS
-#define DURATION_ADVISE_MS 10000
+#define DURATION_ADVISE_MS 5000
 #define DURATION_RANDOM_TIME_ADVISE_MS 10000
-#define DURATION_SEND_MS 10000
+#define DURATION_SEND_MS 5000
 
 enum States{SETUP,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
 
@@ -57,6 +58,7 @@ private:
 	//SEND
 	
 	bool send;
+	bool make_new_send;
 	unsigned long next_time_send_ms;
 	unsigned long time_setup_next_send_ms;
 	unsigned long duration_send_ms;

@@ -52,7 +52,9 @@ void tReviewMessages::execute(){
 	int nmreview=messages->sizeOfMessagesWithoutReview();
 	while(nmreview>0){
 		messages->getMessageWithoutReview(0,msg);
-
+		Serial.print(String("Mensaje a revisar:"));
+		Serial.println(nmreview);		
+		Serial.println(msg);
 		if(!wasHere(msg) && !messages->existMessage(msg)){
 			addNodeToMessage(msg);
 			messages->addMessageToReadQueue(msg);
