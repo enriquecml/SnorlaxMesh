@@ -19,8 +19,14 @@ bool tReadRateMessage::isMessageRate(String &_msg){
 		const char * origin = root["id"];
 		String Origin=String(origin);
 		AP * aux_ap = aps->giveAP(Origin);
-		if(aux_ap!=NULL)
-			aux_ap->rate=root["rate"];
+		if(aux_ap==NULL){
+			aux_ap=new AP();
+			aux_ap->time_saw=millis();
+			aux_ap->period_s=30;
+			aps->addAP(aux_ap);
+		}
+		aux_ap->rate=root["rate"];
+		
 		return true;
 	}
 	
@@ -35,6 +41,7 @@ void tReadRateMessage::execute(){
 		messages->getMessageWithoutRead(i,msg);
 		if(isMessageRate(msg)){
 			messages->removeMessageOfReadQueue(i);
+			i--;
 			found=true;
 		}
 	}

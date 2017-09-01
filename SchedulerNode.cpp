@@ -7,6 +7,8 @@ SchedulerNode::SchedulerNode(){
 void SchedulerNode::machineStates(){
 	switch(state){
 		case SETUP:
+			while(ESP8266TrueRandom.random(MAX_PERIOD_MS)!=0)
+				yield();
 			state=ADVISE;			
 		break;
 		case ADVISE:
@@ -64,7 +66,7 @@ void SchedulerNode::run(){
 	
 	switch(state){
 		case SETUP:
-			
+
 		break;
 		case ADVISE:
 		
@@ -84,13 +86,16 @@ void SchedulerNode::run(){
 			}
 			else
 				make_Send();
-					Serial.print(iterator_task);
-					Serial.print("==");
-					Serial.println(tasks->size());
+					
+				Serial.print(iterator_task);
+				Serial.print("==");
+				Serial.println(tasks->size());
+				
 				if(iterator_task<tasks->size()){
 					
-				tasks->get(iterator_task)->execute();
-				iterator_task++;}
+					tasks->get(iterator_task)->execute();
+					iterator_task++;
+				}
 				
 		break;
 		case SEND:		
@@ -182,9 +187,11 @@ void SchedulerNode::do_Scan(){
 }
 	
 void SchedulerNode::make_Scan(){
-	scan=true;
-	time_scanned=0;
-	SingletonStats::instance()->n_scanned++;
+	if(!scan){
+		scan=true;
+		time_scanned=0;
+		SingletonStats::instance()->n_scanned++;
+	}
 }
 
 void SchedulerNode::updateAP(String & sAP,unsigned long time_saw){
@@ -208,6 +215,15 @@ bool SchedulerNode::time_of_send(){
 }
 
 bool SchedulerNode::nextMessageToSend(String &_msg){
+
+	//send RATE CONTROL MESSAGE
+	if(!sentRate){
+		messages->getMessageReadyToSend(0,_msg);
+		sentRate=true;
+		return true;
+	}
+	
+	//TRY SEND DATA MESSAGE
 	AP * aux =listAPs->giveAP(ssid_to_send);
 	int position=aux->positionMessage;
 	if(position<messages->sizeOfMessagesReadyToSend()){
@@ -229,7 +245,7 @@ void SchedulerNode::do_Send(){
 		time_sending+=duration_ms;				
 		unsigned long init_time=time_now();
 		
-		String msg;
+		
 		bool flag=true;
 		node->upWiFi();
 		node->tryConnect(ssid_to_send);
@@ -237,6 +253,7 @@ void SchedulerNode::do_Send(){
 			if(node->Connected()){
 				if(node->connectedToServer()){
 					connectedToServer=true;
+					String msg;
 					if(nextMessageToSend(msg)){
 						SingletonStats::instance()->n_messages_sent++;							
 						node->sendToServer(msg);
@@ -279,8 +296,10 @@ void SchedulerNode::do_Send(){
 
 void SchedulerNode::make_Send(){
 	if(send==false && make_new_send==true){
+		
 		make_new_send=false;		
-
+		sentRate=false;
+		
 		//search next Send
 		AP *aux;
 		bool foundAP=false;
@@ -297,13 +316,18 @@ void SchedulerNode::make_Send(){
 			for(int i=0;i<n;i++){
 				aux=listAPs->giveAP(i);
 				aux->connected=false;
-			}
-			aux=listAPs->giveAP(0);		
+			}		
 		}
-		if(0!=ESP8266TrueRandom.random(aux->rate)){
-			send=false;			
-		}
-		else{
+		
+		bool canConnect=false;
+		
+		for(int i=0;i<n && !canConnect;i++){
+			aux=listAPs->giveAP(i);
+			if(!aux->connected && 0==ESP8266TrueRandom.random(aux->rate))
+				canConnect=true;
+		}		
+		
+		if(canConnect){
 			send=true;
 			time_sending=DURATION_SEND_MS;		
 			ssid_to_send=aux->ssid;
@@ -312,6 +336,9 @@ void SchedulerNode::make_Send(){
 			next_time_send_ms=aux->period_s-((time_now()-aux->time_saw)%aux->period_s);
 			Serial.print("Milisegundos para enviar:");
 			Serial.println(next_time_send_ms);			
+		}
+		else{
+			send=false;
 		}
 			
 	}

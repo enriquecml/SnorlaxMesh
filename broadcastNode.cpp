@@ -42,6 +42,7 @@ bool broadcastNode::addNewClientConnection(){
 }
 
 bool broadcastNode::readMessage(String &msg){
+	char endline='\n';
 	if(clients_connected.size()>0){
 	WiFiClient * aux_client=clients_connected.get(index_client_connected);
 	index_client_connected++;
@@ -51,9 +52,9 @@ bool broadcastNode::readMessage(String &msg){
 		Serial.println(String("Anterior Mensaje"));
 		Serial.println(msg);
 		Serial.println(String("Mensaje recibido"));
-		msg=aux_client->readStringUntil('\n');
+		msg=aux_client->readStringUntil(endline);
 		Serial.println(msg);		
-		if(msg.length()>0){				
+		if(msg.length()>2){				
 			return true;
 		}
 	}	

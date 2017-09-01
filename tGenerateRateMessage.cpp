@@ -9,43 +9,14 @@ tGenerateRateMessage::tGenerateRateMessage(messageBroker * _messages,broadcastNo
 	lastNumberAPS=0;
 }
 
-bool tGenerateRateMessage::isMessageOwnAboutRate(String &_msg){
-	DynamicJsonBuffer jsonBuffer;
-	JsonObject& root = jsonBuffer.parseObject(_msg);
-
-	const char * channel = root["channel"];
-	String Channel=String(channel);
-	
-	if(Channel.equals(String("_RATE"))){
-		const char * origin = root["id"];
-		String Origin=String(origin);
-		String ssid;		
-		node->getSSID(ssid);			
-		return Origin.equals(ssid);
-	}
-	
-	return false;		
-}
-
 void tGenerateRateMessage::execute(){
 
 	int nMessagesSend=messages->sizeOfMessagesReadyToSend();
-	bool found=false;
 	String msg;
-	int i;
-	for(i=0;i<nMessagesSend && !found;i++){
-		msg=String("");
-		messages->getMessageReadyToSend(i,msg);
-		if(isMessageOwnAboutRate(msg)){
-			Serial.println(String("indice"));
-			Serial.println(i);
-			found=true;
-			i--;
-		}
-	}
+
 	DynamicJsonBuffer jsonBuffer;
 
-	msg=String("");
+	
 	JsonObject& root = jsonBuffer.createObject();
 	root["rate"]=SingletonStats::instance()->n_messages_received/(SingletonStats::instance()->n_messages_removed +1); //aps->numberAPs();
 	root["channel"]=String("_RATE");
@@ -53,14 +24,12 @@ void tGenerateRateMessage::execute(){
 	node->getSSID(ssid);
 	root["id"]=String(ssid);
 	root.printTo(msg);	
-			Serial.println(String("indice"));
-			Serial.println(i);	
-	if(found){
-		messages->addMessageToSendQueue(i,msg);
-	}
-	else{
-		messages->addMessageToSendQueue(msg);		
-	}
+
+	if(messages->sizeOfMessagesReadyToSend()==0)
+		messages->addMessageToSendQueue(msg);	
+	else
+		messages->addMessageToSendQueue(0,msg);	
+	
 	
 
 }

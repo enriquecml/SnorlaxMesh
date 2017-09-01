@@ -22,8 +22,8 @@
 	#define DEBUG_SNORLAX_SCHEDULERNODE(...) __VA_ARGS__
 #endif
 
-#define MIN_PERIOD_MS 30000
-#define MAX_PERIOD_MS 30000
+#define MIN_PERIOD_MS 180000
+#define MAX_PERIOD_MS 180000
 #define DURATION_SCAN_MS MAX_PERIOD_MS
 #define DURATION_ADVISE_MS 8000
 #define DURATION_RANDOM_TIME_ADVISE_MS 8000
@@ -62,6 +62,7 @@ private:
 	
 	//SEND
 	
+	bool sentRate;
 	bool send;
 	bool make_new_send;
 	unsigned long next_time_send_ms;

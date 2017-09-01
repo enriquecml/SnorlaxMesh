@@ -9,7 +9,7 @@
 
 #define DEBUG_SNORLAX_REVIEWMESSAGES 1
 #ifdef  DEBUG_SNORLAX_REVIEWMESSAGES
-	#define DEBUG_SNORLAX_REVIEWMESSAGES(...) __VA_ARGS__
+#define DEBUG_SNORLAX_REVIEWMESSAGES(...) __VA_ARGS__
 #endif
 
 class tReviewMessages: public Task{

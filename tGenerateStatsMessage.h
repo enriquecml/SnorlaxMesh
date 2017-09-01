@@ -13,9 +13,11 @@ public:
 	tGenerateStatsMessage(messageBroker * _messages,broadcastNode * _node);
 	void execute();
 private:
+
 	unsigned long own_sequence;	
 	messageBroker * messages;	
 	broadcastNode *node;
+	bool isMessageOwnAboutStats(String &_msg);
 
 };
 #endif

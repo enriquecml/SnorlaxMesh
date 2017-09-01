@@ -7,7 +7,39 @@ tGenerateStatsMessage::tGenerateStatsMessage(messageBroker * _messages,broadcast
 	node=_node;
 }
 
+bool tGenerateStatsMessage::isMessageOwnAboutStats(String &_msg){
+	DynamicJsonBuffer jsonBuffer;
+	JsonObject& root = jsonBuffer.parseObject(_msg);
+
+	const char * channel = root["channel"];
+	String Channel=String(channel);
+	
+	if(Channel.equals(String("_STATS"))){
+		const char * origin = root["ids"][0];
+		String Origin=String(origin);
+		String ssid;		
+		node->getSSID(ssid);			
+		return Origin.equals(ssid);
+	}
+	
+	return false;		
+}
+
 void tGenerateStatsMessage::execute(){
+	
+	int nMessagesSend=messages->sizeOfMessagesReadyToSend();
+	bool found=false;
+	String msg;
+	int i;
+	for(i=0;i<nMessagesSend && !found;i++){
+		msg=String("");
+		messages->getMessageReadyToSend(i,msg);
+		if(isMessageOwnAboutStats(msg)){
+			found=true;
+			i--;
+		}
+	}
+	
 	DynamicJsonBuffer jsonBuffer;
 
 	JsonObject& root = jsonBuffer.createObject();
@@ -25,12 +57,16 @@ void tGenerateStatsMessage::execute(){
 	data["n_sleeps"]=SingletonStats::instance()->n_sleeps;
 
 	root["channel"]=String("_STATS");
-	root["sequence"]=millis();
+	root["sequence"]=own_sequence;
+	own_sequence++;
 	root["n_ids"]=1;
 	String ssid;
 	node->getSSID(ssid);
 	ids.add(ssid);
-	String msg;
+	msg=String("");
 	root.printTo(msg);
-	messages->addMessageToSendQueue(msg);				
+	if(found)
+		messages->addMessageToSendQueue(i,msg);				
+	else
+		messages->addMessageToSendQueue(msg);					
 }

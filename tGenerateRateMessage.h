@@ -20,6 +20,6 @@ private:
 	APs *aps;
 	
 	int lastNumberAPS;
-	bool isMessageOwnAboutRate(String &_msg);
+
 };
 #endif
