@@ -40,6 +40,7 @@ void tGenerateStatsMessage::execute(){
 		}
 	}
 	
+	if(!found){
 	DynamicJsonBuffer jsonBuffer;
 
 	JsonObject& root = jsonBuffer.createObject();
@@ -65,8 +66,7 @@ void tGenerateStatsMessage::execute(){
 	ids.add(ssid);
 	msg=String("");
 	root.printTo(msg);
-	if(found)
-		messages->addMessageToSendQueue(i,msg);				
-	else
-		messages->addMessageToSendQueue(msg);					
+	messages->addMessageToSendQueue(msg);	
+	}
+					
 }

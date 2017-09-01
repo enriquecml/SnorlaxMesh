@@ -12,14 +12,14 @@ broadcastNode::broadcastNode():server(SERVER_PORT)
 }
 
 void broadcastNode::upWiFi(){
-	WiFi.forceSleepWake();
-	delay(1);
+	//WiFi.forceSleepWake();
+	//delay(1);
 }
 
 void broadcastNode::downWiFi(){
 	WiFi.mode(WIFI_OFF); 
-	WiFi.forceSleepBegin();
-	delay(1);
+	//WiFi.forceSleepBegin();
+	//delay(1);
 }
   
 void broadcastNode::modeAp(){
@@ -64,12 +64,12 @@ bool broadcastNode::readMessage(String &msg){
 
 void broadcastNode::clearServer(){
 	WiFiClient * aux_client;
-	for(int i=0;i<clients_connected.size();i++){
-		aux_client=clients_connected.get(i);
+	while(clients_connected.size()>0){
+		aux_client=clients_connected.get(0);
 		aux_client->flush();
 		aux_client->stop();			
 		delete(aux_client);
-		clients_connected.remove(i);	
+		clients_connected.remove(0);	
 	}
 	
 }

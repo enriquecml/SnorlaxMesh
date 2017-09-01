@@ -173,7 +173,7 @@ void SchedulerNode::do_Scan(){
 			pointTime2=time_now();
 			for(int i=0;i<n;i++){
 				saux=APs_filtered.get(i);
-				updateAP(saux,(pointTime2-pointTime1)/2);
+				updateAP(saux,(pointTime2+pointTime1)/2);
 			}
 			if(time_now()-init_time>=duration_ms)
 				flag=false;
@@ -244,7 +244,7 @@ void SchedulerNode::do_Send(){
 	if(duration_ms!=0){
 		time_sending+=duration_ms;				
 		unsigned long init_time=time_now();
-		
+		String msg;
 		
 		bool flag=true;
 		node->upWiFi();
@@ -253,10 +253,10 @@ void SchedulerNode::do_Send(){
 			if(node->Connected()){
 				if(node->connectedToServer()){
 					connectedToServer=true;
-					String msg;
+					msg=String("");
 					if(nextMessageToSend(msg)){
-						SingletonStats::instance()->n_messages_sent++;							
 						node->sendToServer(msg);
+						SingletonStats::instance()->n_messages_sent++;													
 					}
 				}
 				else{
