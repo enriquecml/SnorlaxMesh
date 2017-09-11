@@ -5,13 +5,13 @@ unsigned long substract(unsigned long a,unsigned long b){
 	return a-b;
 }
 
-unsigned long min(unsigned long a,unsigned long b){
+unsigned long snorlax_min(unsigned long a,unsigned long b){
 	if(a>b)
 		return b;
 	return a;
 }
 
-unsigned long max(unsigned long a,unsigned long b){
+unsigned long snorlax_max(unsigned long a,unsigned long b){
 	if(a>b)
 		return a;
 	return b;

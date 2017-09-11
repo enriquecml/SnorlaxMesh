@@ -154,7 +154,7 @@ void SchedulerNode::do_Advise(){
 
 void SchedulerNode::do_Scan(){
 
-	unsigned long duration_ms=min(substract(duration_scan_ms,time_scanned),substract(next_time_advise_ms,time_now()));
+	unsigned long duration_ms=snorlax_min(substract(duration_scan_ms,time_scanned),substract(next_time_advise_ms,time_now()));
 	if(duration_ms!=0){
 		time_scanned+=duration_ms;				
 		unsigned long init_time=time_now();
@@ -240,7 +240,7 @@ void SchedulerNode::do_Send(){
 	Serial.print(String("tiempo hasta el siguiente modo AP:"));
 	Serial.println(time_to_advise);
 	unsigned long left_time=substract(duration_send_ms,time_sending);
-	unsigned long duration_ms=min(left_time,time_to_advise);
+	unsigned long duration_ms=snorlax_min(left_time,time_to_advise);
 	if(duration_ms!=0){
 		time_sending+=duration_ms;				
 		unsigned long init_time=time_now();
@@ -355,7 +355,7 @@ unsigned long SchedulerNode::calculate_period(){
 			amount_ms+=tasks->get(i)->duration_ms;
 		}
 	}
-	unsigned long ms=min(MAX_PERIOD_MS,max(MIN_PERIOD_MS,amount_ms));
+	unsigned long ms=snorlax_min(MAX_PERIOD_MS,snorlax_max(MIN_PERIOD_MS,amount_ms));
 	Serial.print("Milisegundos del periodo");
 	Serial.println(ms);
 	return ms;
