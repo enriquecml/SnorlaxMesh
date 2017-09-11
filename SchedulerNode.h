@@ -5,7 +5,6 @@
 
 #include <ArduinoJson.h>
 #include <LinkedList.h>
-#include <FS.h>
 
 #include "Helper.h"
 
@@ -101,12 +100,6 @@ private:
 
 	unsigned long time_now();
 	
-	void save_configuration();
-	
-	void load_configuration();
-	
-
-	
 	
 public:
 		SchedulerNode();
@@ -122,7 +115,6 @@ public:
 	//
 	void run();	
 	
-	void TestLoadSave();
 	void Init();
 	
 };

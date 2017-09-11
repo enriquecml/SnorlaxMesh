@@ -369,37 +369,6 @@ bool SchedulerNode::time_of_advise(){
 	return time_now()-time_setup_next_advise_ms>=period_ms;
 }
 
-void SchedulerNode::save_configuration(){
-	DynamicJsonBuffer jsonBuffer;
-
-	JsonObject& root = jsonBuffer.createObject();
-
-	root["total_time"]=total_time;
-	root["period_ms"]=period_ms;
-	root["more_random_time_advise_ms"]=more_random_time_advise_ms;
-	root["duration_advise_ms"]=duration_advise_ms;
-	root["time_setup_next_advise_ms"]=time_setup_next_advise_ms;
-	root["state"]=state;
-
-	SPIFFS.begin();
-	File configFile = SPIFFS.open("/config.json", "w");
-	root.printTo(Serial);
-	root.printTo(configFile);
-	configFile.close();
-	SPIFFS.end();
-}
-
-void SchedulerNode::load_configuration(){
-	SPIFFS.begin();
-	File configFile = SPIFFS.open("/config.json", "r");
-	String line=configFile.readString();
-	Serial.println("...");
-	Serial.println(line);
-	Serial.println("...");	
-	configFile.close();
-	SPIFFS.end();	
-}
-
 void SchedulerNode::set_APs(APs *_listAPs){
 	listAPs=_listAPs;
 }
@@ -416,10 +385,6 @@ void SchedulerNode::set_tasks(LinkedList<Task*> *_tasks){
 	tasks=_tasks;
 }
 
-void SchedulerNode::TestLoadSave(){
-	save_configuration();
-	load_configuration();
-}
 
 void SchedulerNode::Init(){
 	state=SETUP;
