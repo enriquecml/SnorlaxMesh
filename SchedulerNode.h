@@ -1,122 +1,63 @@
 #ifndef __SCHEDULERNODE_H__
 #define __SCHEDULERNODE_H__
 
-#include <Arduino.h>
-
-#include <ArduinoJson.h>
-#include <LinkedList.h>
-
-#include "Helper.h"
-
-#include "Task.h"
-
-#include "messageBroker.h"
-#include "APs.h"
 #include "broadcastNode.h"
+#include "PubBase.h"
+#include "SubBase.h"
 #include "SingletonStats.h"
-#include <ESP8266TrueRandom.h>
-
-#define DEBUG_SNORLAX_SCHEDULERNODE 1
-#ifdef  DEBUG_SNORLAX_SCHEDULERNODE
-	#define DEBUG_SNORLAX_SCHEDULERNODE(...) __VA_ARGS__
-#endif
-
-#define MIN_PERIOD_MS 80000
-#define MAX_PERIOD_MS 80000
-#define DURATION_SCAN_MS MAX_PERIOD_MS
-#define DURATION_ADVISE_MS 8000
-#define DURATION_RANDOM_TIME_ADVISE_MS 8000
-#define DURATION_SEND_MS 8000
-
-enum States{SETUP,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
-
+enum States{NONE,ADVISE,SCAN,ACTIONS,SEND,SLEEP};
 class SchedulerNode{
 
 private:
-	//amount time
-	unsigned long total_time;
-	//Period
-	unsigned long period_ms;
 
-	//Advise	
-	
-	unsigned long more_random_time_advise_ms;
-	unsigned long duration_advise_ms;
-	unsigned long next_time_advise_ms;
-	unsigned long time_setup_next_advise_ms;
-	bool time_of_advise();
-
-	void do_Advise();
-	void make_Advise();
-	
-	//Scan
-	bool lostConnection;
-	bool scan;
-	unsigned long time_scanned;
-	unsigned long duration_scan_ms;
-	void do_Scan();
-	void make_Scan();
-	
-	void updateAP(String & sAP,unsigned long time_saw);
-	
-	//SEND
-	
-	bool sentRate;
-	bool send;
-	bool make_new_send;
-	unsigned long next_time_send_ms;
-	unsigned long time_setup_next_send_ms;
-	unsigned long duration_send_ms;
-	unsigned long time_sending;
-	bool connectedToServer;
-	bool time_of_send();
-	
-	String ssid_to_send;
-	bool nextMessageToSend(String &_msg);
-	
-	void do_Send();
-	void make_Send();
-	
-	//List of Tasks of User
-	LinkedList<Task*> *tasks;
-	int iterator_task;
-	// Machine States
 	int state;
-	void machineStates();
-	
-	//List of APs
-	
-	APs * listAPs;
-	
-	//Message Broker
-	
-	messageBroker * messages;
-	
-	//Node
-	
-	broadcastNode * node;
-	
-	unsigned long calculate_period();	
 
-	unsigned long time_now();
+	unsigned long min_time_ms;
+	unsigned long random_more_time_s;
+	unsigned long time_of_receive_ms;
 	
+	unsigned long period_ms;	
+	volatile int signal_of_receive;
+	Ticker alarm_of_receive;
+	unsigned long next_time_receive_ms;	
+	
+	Ticker alarm_of_send;
+	bool waiting_for_send;
+	volatile  int signal_of_send;
+    unsigned long time_next_send;
+	unsigned long duration_send_ms;
+    String ssid_to_send;
+
+	bool scanning;
+	unsigned long total_time_scanned;
+	unsigned long total_time_scanning;
+	
+	broadcastNode node;
+	messageBroker _messages;	
+
+	LinkedList<PubBase*> publicators;
+	int position_publicator_generate;
+	
+	LinkedList<SubBase*> subscriptors;
+	void advise();
+	void scan();
+	void send();
+	
+bool subscriptors_read_messages();	
 	
 public:
-		SchedulerNode();
-		
-	//Methods set resources
-	void set_APs(APs *_listAPs);
-	
-	void set_messageBroker(messageBroker * _messages);
-	
-	void set_node(broadcastNode * _node);
 
-	void set_tasks(LinkedList<Task*> *_tasks);	
-	//
-	void run();	
+bool all_publicates();
+
+	SchedulerNode();
+	void stateMachine();	
+	void do_run();
 	
-	void Init();
-	
+bool prepare_scanning();
+
+bool prepare_send();
+
+bool process_messages();	
 };
 
 #endif
