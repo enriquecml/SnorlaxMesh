@@ -1,124 +1,192 @@
 
 #include "broadcastNode.h"
 
-broadcastNode::broadcastNode():server(SERVER_PORT)
+broadcastNode::broadcastNode():_server(SERVER_PORT)
 {
-	WiFi.setAutoConnect(false);
- 	WiFi.persistent(false);
-	downWiFi();	
-	chip_id = ESP.getChipId();
-	ssid = String( String( SSID_PREFIX ) + String( chip_id ) ); 
-	index_client_connected=0;	
-}
-
-void broadcastNode::upWiFi(){
-	//WiFi.forceSleepWake();
-	//delay(1);
-}
-
-void broadcastNode::downWiFi(){
-	WiFi.mode(WIFI_OFF); 
-	//WiFi.forceSleepBegin();
-	//delay(1);
-}
+  _chip_id = ESP.getChipId();
+  _ssid = String( String( SSID_PREFIX ) + String( _chip_id ) );
   
-void broadcastNode::modeAp(){
-	WiFi.softAP(ssid.c_str());
+  pub=false;
 }
 
-void broadcastNode::initServer(){
-	server.begin();
-}
-
-bool broadcastNode::addNewClientConnection(){
-	WiFiClient * new_client;
-	if(server.hasClient()){
-		new_client=new WiFiClient();
-		*new_client=server.available();
-		clients_connected.add(new_client);
-		return true;
-	}
-	return false;
-}
-
-bool broadcastNode::readMessage(String &msg){
-	char endline='\n';
-	if(clients_connected.size()>0){
-	WiFiClient * aux_client=clients_connected.get(index_client_connected);
-	index_client_connected++;
-	if(index_client_connected==clients_connected.size())
-		index_client_connected=0;
-	if(aux_client->available()>0){
-		Serial.println(String("Anterior Mensaje"));
-		Serial.println(msg);
-		Serial.println(String("Mensaje recibido"));
-		msg=aux_client->readStringUntil(endline);
-		Serial.println(msg);		
-		if(msg.length()>2){				
-			return true;
-		}
-	}	
-	}
-	return false;
-}
-
-void broadcastNode::clearServer(){
-	WiFiClient * aux_client;
-	while(clients_connected.size()>0){
-		aux_client=clients_connected.get(0);
-		aux_client->flush();
-		aux_client->stop();			
-		delete(aux_client);
-		clients_connected.remove(0);	
-	}
-	
-}
-
-void broadcastNode::closingServer(){
-		clearServer();
-		server.stop();	
-}
-
-int broadcastNode::scan(LinkedList<String> &APs_filtered){
-	String filter=String(SSID_PREFIX);
+   void broadcastNode::scan(unsigned long duration_ms,messageBroker * messages,unsigned long max_range,unsigned long min_range){
+  	Ticker t;
+	int in = 1;
+	t.once_ms(duration_ms,int_to_cero,&in);
+	unsigned long pointTime1;
+	unsigned long pointTime2;	
+	String filter=String(SSID_PREFIX);   
+	WiFi.mode(WIFI_STA);
+	WiFi.disconnect();
+	while(in){
+	pointTime1=millis();	
     int n = WiFi.scanNetworks();
+	pointTime2=millis();
     for (int i = 0; i < n; ++i) {
-		if(WiFi.SSID(i).startsWith(filter))
-			APs_filtered.add(WiFi.SSID(i));  
+      if(WiFi.SSID(i).startsWith(filter)){
+		messages->updateAP(WiFi.SSID(i),substract(pointTime2,(pointTime2-pointTime1)/2),true,max_range,min_range);
+      }
     }
-	return APs_filtered.size();
-}
-
-void broadcastNode::getSSID(String &_ssid){
-	_ssid=ssid;
-}
-
-void broadcastNode::setSSID(String &_ssid){
-	ssid=_ssid;
-}
-
-void broadcastNode::tryConnect(String &_ssid){
-	WiFi.begin(_ssid.c_str());	
-}
-
-bool broadcastNode::Connected(){
-	return WiFi.isConnected();
-}
-
-void broadcastNode::InitClient(){
+	}
+	WiFi.disconnect(true);
+	
+  }
+  
+void broadcastNode::trySendMessages(unsigned long duration,messageBroker * messages,String & ssid){
+	 SingletonStats::instance()->n_try_connections++;
+  	Ticker t;	
+	int in = 1;
+	t.once_ms(duration,int_to_cero,&in);
+	//unsigned long pointTime;
+	int state=0;
+	bool sent=false;
+	bool connected=false;
+	bool sent_rate=false;
 	IPAddress ip(192, 168, 4, 1);
-	client.connect(ip, SERVER_PORT);
-}
+	//String sip=String(SERVER_IP_ADDR);
+	while(in && !sent){
+		switch(state){
+			case 0:
+				_client.setNoDelay(true);
+				state++;
+			break;
+			case 1:
+				WiFi.begin( ssid.c_str() );
+				//WiFi.setAutoReconnect(false);
+				DEBUG_MSG("Esperando resultado de la espera de la conexion");				
+			    if(WiFi.waitForConnectResult() == WL_CONNECTED){
+					//pointTime=millis();
+					state++;
+					DEBUG_MSG("Conectado al ssid %s",ssid.c_str());
+				}
+				DEBUG_MSG("Resultado de la conexion");				
+				
+			break;
+			case 2:
+				//if(WiFi.status() == WL_CONNECTED){
+					if(_client.connect(ip, SERVER_PORT)){
+						state++;
+						connected=true;						
+					}					
+				//}
+				else{
+					state--;
+				}
 
-void broadcastNode::stopClient(){
-	client.flush();
-	client.stop();
-}
+			break;
+			case 3:
+				if(_client.connected()){
+					String m=String("");
+					if(sent_rate){
+						messages->nextMessage(ssid,m);
+						if(m.length()>0){
+							Serial.println(m);						
+							_client.println(m);
+						}
+						else{
+							sent=true;
+						}
+					}else{
+						SingletonStats::instance()->n_messages_sent++;
+						createRate(m);
+						if(m.length()>0){
+							Serial.println(m);						
+							_client.println(m);
+						}
+						sent_rate=true;					
+					}	
+				}
+				else{
+					state--;
+				}
+			break;
+		}
+	}
+	_client.flush();
+	_client.stop();
+	WiFi.disconnect(true);
+	if(connected){
+		//messages->updateAP(ssid,substract(pointTime,1000),0,0);
+		//connected true
+		messages->putConnected(ssid);
+	}
+	else{
+		SingletonStats::instance()->n_failed_connections++;
+		messages->incrementTry(ssid);
+	}
 
-bool broadcastNode::connectedToServer(){
-	return client.connected();	
-}
+  }  
 
-void broadcastNode::sendToServer(String &_msg){
-	client.println(_msg);
+void broadcastNode::createRate(String &sJson){
+	DynamicJsonBuffer jsonBuffer;
+
+	JsonObject& root = jsonBuffer.createObject();
+	root["rate"]=SingletonStats::instance()->n_messages_received/SingletonStats::instance()->n_messages_sent;
+	root["channel"]=String("_RATE");
+	root["id"]=_ssid;
+	root.printTo(sJson);
+	sJson.trim();
+}  
+
+void broadcastNode::modeCatchDataMessages(unsigned long duration,messageBroker *messages){
+	Ticker t;
+	int in = 1;
+	t.once_ms(duration,int_to_cero,&in);
+
+	int state=0;
+	//bool yetClient=false;
+	while(in){
+		yield();
+		switch(state){
+			case 0:
+				WiFi.softAP(_ssid.c_str());	
+				_server.setNoDelay(true);				
+				_server.begin();
+				
+				state++;
+			break;
+			case 1:
+					if(_server.hasClient()){
+						_client=_server.available();
+						state++;
+					}
+			break;
+			case 2:
+				if(_client.connected()){
+					if (_client.available()){
+						String line = _client.readStringUntil('\n');
+						Serial.println("Recibido");
+						Serial.println(line);
+						line.trim();
+						if(line.length()>0)
+							messages->entryMessage(line);//Dont forget Global Time(Singleton or global Variable) or across time for parameter
+
+					}				
+				}
+				else{
+				state--;
+				}
+			break;
+
+		}
+	}
+	WiFi.softAPdisconnect(true);
+		while(_server.hasClient()){
+			DEBUG_MSG("Parando un cliente");			
+			_client=_server.available();
+					if (_client.available()){
+						String line = _client.readStringUntil('\n');
+						Serial.println("Recibido");
+						Serial.println(line);						
+						messages->entryMessage(line);//Dont forget Global Time(Singleton or global Variable) or across time for parameter
+						line.trim();
+						if(line.length()>0)
+							messages->entryMessage(line);//Dont forget Global Time(Singleton or global Variable) or across time for parameter
+					}				
+			_client.flush();
+			_client.stop();					
+		}
+		//_server.stop();
+		
 }
+ 
