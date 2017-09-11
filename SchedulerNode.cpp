@@ -1,260 +1,405 @@
 #include "SchedulerNode.h"
 
 SchedulerNode::SchedulerNode(){
-	WiFi.setAutoConnect(false);
-	//WiFi.setAutoReconnect(false);
-	publicators.add(new PubBase());
-	subscriptors.add(new SubBase());
-    position_publicator_generate=0;	
-	randomSeed(ESP.getChipId());
-	
-	state=1;//load
 
-	min_time_ms=8000;
-	random_more_time_s=8;
-	time_of_receive_ms=min_time_ms+random(random_more_time_s)*1000;
-	
-	period_ms=120000;	
-	signal_of_receive=0;//load
-	
-	scanning=false;//load
-	total_time_scanning=period_ms;//at moment same that period advise
-	total_time_scanned=0;
-
-	waiting_for_send=false;//load
-	signal_of_send=1;//load
-	next_time_receive_ms=millis();//load
-
-	duration_send_ms=8000;
-	
 }
 
-
-unsigned long min(unsigned long a,unsigned long b){
-	if(a>b)
-		return b;
-	return a;
-}
-
-void SchedulerNode::stateMachine(){
+void SchedulerNode::machineStates(){
 	switch(state){
+		case SETUP:
+			while(ESP8266TrueRandom.random(MAX_PERIOD_MS)!=0)
+				yield();
+			state=ADVISE;			
+		break;
 		case ADVISE:
-			if(scanning){
-				state=SCAN;//SCAN
-				break;
-			}
-			if(signal_of_send==0){
-				state=4;//SEND MESSAGES
-				break;
-			}
-			state=3;//PROCESS
+		
+			if(scan)
+				state=SCAN;
+			else
+				if(time_of_send())
+					state=SEND;
+				else
+					state=ACTIONS;
 		break;
-		case 2:
-			if(signal_of_receive==0){
-				state=1;
-				break;
-			}
-			state=3;
-			
+		case SCAN:
+			if(time_of_advise())
+				state=ADVISE;
 		break;
-		case 3:
-			if(signal_of_receive==0){
-				state=1;//ADVISE
-				break;
-			}
-			if(signal_of_send==0){
-				state=4;//SEND MESSAGES
-				break;
-			}				
-		break;
-		case 4:
-			if(signal_of_receive==0){
-				state=1;//ADVISE
+		case ACTIONS:
+		
+			if(time_of_advise()){
+				state=ADVISE;
 			}
 			else{
-				state=3;				
-			}			
-		break;
-		case 5:
-			if(signal_of_receive==0){
-				state=1;//ADVISE
-				break;
-			}
-			if(signal_of_send==0){
-				state=4;//SEND MESSAGES
-				break;
-			}									
-		break;
-	}
-}
-
-bool SchedulerNode::prepare_scanning(){
-	
-	if( (scanning == false)	&& (_messages.isLostConnectionWithAP() || _messages.numberOfAPs()==0)  ){
-		total_time_scanned=0;		
-		scanning=true;
-		return true;
-	}
-	return false;
-}
-
-bool SchedulerNode::all_publicates(){
-	DEBUG_MSG("Generando publicaciones");
-
-	for(int i=0;i<publicators.size();i++){
-		if(!publicators.get(i)->publicated){
-			String sJson;
-			publicators.get(i)->generatePubMessage(sJson,node._ssid);
-			_messages._messages_ready_to_send.add(sJson);
-			return true;			
-		}
-	}
-	return false;
-}
-
-bool SchedulerNode::subscriptors_read_messages(){
-	if(_messages._messages_without_read.size()>0){
-		DEBUG_MSG("Intentando leer mensaje");
-		String channel;
-		String origin;
-		unsigned long sequence;
-		_messages.extractChannelAndSequence(_messages._messages_without_read.get(0),channel,sequence,origin);
-		for(int i=0;i<subscriptors.size();i++){
-			if(subscriptors.get(i)->channel.equals(channel)){
-				if(subscriptors.get(i)->read(_messages._messages_without_read.get(0))){
-					_messages._messages_ready_to_send.add(_messages._messages_without_read.get(0));
-					_messages._messages_without_read.remove(0);
-					return true;					
+				if(time_of_send())
+					state=SEND;
+				else{
+					if(iterator_task==tasks->size()){
+						
+						SingletonStats::instance()->n_sleeps++;						
+						state=SLEEP;
+						messages->show_queues();
+					}
 				}
-			}		
-		}//we should look all messages for subscriptors
-		_messages._messages_ready_to_send.add(_messages._messages_without_read.get(0));
-		_messages._messages_without_read.remove(0);
-		return true;			
+			}
+		break;
+		case SEND:
+		
+			if(time_of_advise())
+				state=ADVISE;
+			else	
+				state=ACTIONS;
+		break;
+		case SLEEP:
+		
+			if(time_of_advise())
+				state=ADVISE;
+			else
+				if(time_of_send())
+					state=SEND;		
+		break;
+		
 	}
-	return false;
 }
 
-bool SchedulerNode::prepare_send(){
+void SchedulerNode::run(){
+	
+	switch(state){
+		case SETUP:
 
-		if(scanning == false && waiting_for_send==false){
-			waiting_for_send=true;
-			_messages.nextTimeSend(ssid_to_send,time_next_send,duration_send_ms,period_ms,min_time_ms+random_more_time_s*1000);
-			signal_of_send=1;
-			alarm_of_send.once_ms(time_next_send,int_to_cero,&signal_of_send);
-			DEBUG_MSG("Preparado envio para dentro de %d milisegundos",time_next_send);		
+		break;
+		case ADVISE:
+		
+			make_Advise();
+			do_Advise();
+			make_new_send=true;
+			iterator_task=0;			
+		break;
+		case SCAN:
+		
+			do_Scan();
+		break;
+		case ACTIONS:
+		
+			if(listAPs->numberAPs()==0 || lostConnection){
+				make_Scan();
+			}
+			else
+				make_Send();
+					
+				Serial.print(iterator_task);
+				Serial.print("==");
+				Serial.println(tasks->size());
+				
+				if(iterator_task<tasks->size()){
+					
+					tasks->get(iterator_task)->execute();
+					iterator_task++;
+				}
+				
+		break;
+		case SEND:		
+			do_Send();	
+		break;
+		case SLEEP:
 			
-			return true;
-		}
-	return false;
+		break;		
+	}
+	machineStates();
+	
 }
 
 
 
-bool SchedulerNode::process_messages(){
-	if(_messages.reviewMessages(node._ssid)){
-		DEBUG_MSG("Mensajes revisados mensaje");
-		return true;
+void SchedulerNode::make_Advise(){
+
+	time_setup_next_advise_ms=time_now();
+	next_time_advise_ms=time_setup_next_advise_ms+period_ms;
+	
+}
+
+void SchedulerNode::do_Advise(){
+	
+	unsigned long init_time=time_now();
+	DEBUG_SNORLAX_SCHEDULERNODE(Serial.print(String("init_time:")));
+	DEBUG_SNORLAX_SCHEDULERNODE(Serial.println(init_time));	
+	unsigned long timeAdvise=duration_advise_ms+ESP8266TrueRandom.random(2)*more_random_time_advise_ms;
+	DEBUG_SNORLAX_SCHEDULERNODE(Serial.print(String("timeAdvise:")));
+	DEBUG_SNORLAX_SCHEDULERNODE(Serial.println(timeAdvise));		
+	String msg;
+	bool flag=true;
+	
+	node->upWiFi();
+	node->modeAp();
+	node->initServer();	
+
+	while(flag){
+		node->addNewClientConnection();
+		if(node->readMessage(msg)){
+			messages->addMessageToReviewQueue(msg);
+			SingletonStats::instance()->n_messages_received++;
+		}
+		
+		if(time_now()-init_time>=timeAdvise)
+			flag=false;
+		yield();
+	}
+	
+	node->downWiFi();	
+	while(node->readMessage(msg))
+		messages->addMessageToReviewQueue(msg);
+	
+	node->closingServer();
+}
+
+void SchedulerNode::do_Scan(){
+
+	unsigned long duration_ms=snorlax_min(substract(duration_scan_ms,time_scanned),substract(next_time_advise_ms,time_now()));
+	if(duration_ms!=0){
+		time_scanned+=duration_ms;				
+		unsigned long init_time=time_now();
+		bool flag=true;
+		int n;
+		String saux;
+		unsigned long pointTime1;
+		unsigned long pointTime2;		
+		LinkedList<String> APs_filtered;		
+		node->upWiFi();
+
+		while(flag){
+			APs_filtered.clear();		
+			pointTime1=time_now();
+			n=node->scan(APs_filtered);
+			pointTime2=time_now();
+			for(int i=0;i<n;i++){
+				saux=APs_filtered.get(i);
+				updateAP(saux,(pointTime2+pointTime1)/2);
+			}
+			if(time_now()-init_time>=duration_ms)
+				flag=false;
+		}
+		node->downWiFi();
 	}
 	else{
-		if(all_publicates()){
-			return true;
+		scan=false;
+		lostConnection=false;
+	}
+}
+	
+void SchedulerNode::make_Scan(){
+	if(!scan){
+		scan=true;
+		time_scanned=0;
+		SingletonStats::instance()->n_scanned++;
+	}
+}
+
+void SchedulerNode::updateAP(String & sAP,unsigned long time_saw){
+	Serial.print("actualizar AP:");
+	Serial.println(sAP);
+	AP * aux =listAPs->giveAP(sAP);
+	if(aux==NULL){		
+		aux = new AP();
+		aux->ssid=String(sAP);
+		sAP.remove(0,sAP.indexOf('S')+1);
+		aux->period_s=1000*sAP.toInt();		
+		listAPs->addAP(aux);
+		aux->time_saw=time_saw;
+		aux->nTry=0;		
+	}
+
+}
+
+bool SchedulerNode::time_of_send(){
+	return send && time_now()-time_setup_next_send_ms>=next_time_send_ms;
+}
+
+bool SchedulerNode::nextMessageToSend(String &_msg){
+
+	//send RATE CONTROL MESSAGE
+	if(!sentRate){
+		messages->getMessageReadyToSend(0,_msg);
+		sentRate=true;
+		return true;
+	}
+	
+	//TRY SEND DATA MESSAGE
+	AP * aux =listAPs->giveAP(ssid_to_send);
+	int position=aux->positionMessage;
+	if(position<messages->sizeOfMessagesReadyToSend()){
+		messages->getMessageReadyToSend(position,_msg);
+		aux->positionMessage++;
+		return true;
+	}
+	return false;	
+}
+
+void SchedulerNode::do_Send(){
+
+	unsigned long time_to_advise=substract(next_time_advise_ms,time_now());
+	Serial.print(String("tiempo hasta el siguiente modo AP:"));
+	Serial.println(time_to_advise);
+	unsigned long left_time=substract(duration_send_ms,time_sending);
+	unsigned long duration_ms=snorlax_min(left_time,time_to_advise);
+	if(duration_ms!=0){
+		time_sending+=duration_ms;				
+		unsigned long init_time=time_now();
+		String msg;
+		
+		bool flag=true;
+		node->upWiFi();
+		node->tryConnect(ssid_to_send);
+		while(flag){
+			if(node->Connected()){
+				if(node->connectedToServer()){
+					connectedToServer=true;
+					msg=String("");
+					if(nextMessageToSend(msg)){
+						node->sendToServer(msg);
+						SingletonStats::instance()->n_messages_sent++;													
+					}
+				}
+				else{
+					node->InitClient();
+				}
+			}
+			if(time_now()-init_time>=duration_ms)
+				flag=false;
+			yield();
+		}
+		node->stopClient();
+		node->downWiFi();
+	}
+	
+	if(time_sending==duration_send_ms){
+		Serial.println(String("Cerrando envio"));
+		AP * aux=listAPs->giveAP(ssid_to_send);
+		//Update tries
+		if(!connectedToServer){
+			SingletonStats::instance()->n_failed_connections++;							
+			aux->nTry++;
+			if(aux->nTry==3){
+				lostConnection=true;
+				listAPs->removeAP(ssid_to_send);
+			}
 		}
 		else{
-			if(subscriptors_read_messages()){
-				return true;
-			}
-			else{
-				DEBUG_MSG("Eliminando mensajes");
-				if(_messages.removeMessage(publicators))
-					return true;
-			}			
+			aux->nTry=0;
+			aux->connected=true;			
+		}
+		SingletonStats::instance()->n_try_connections++;	
+		connectedToServer=false;	
+		send=false;
+	}
+	
+}
+
+void SchedulerNode::make_Send(){
+	if(send==false && make_new_send==true){
+		
+		make_new_send=false;		
+		sentRate=false;
+		
+		//search next Send
+		AP *aux;
+		bool foundAP=false;
+		int n=listAPs->numberAPs();
+		
+		for(int i=0;i<n && !foundAP;i++){
+			aux=listAPs->giveAP(i);
+			if(aux->connected==false)
+				foundAP=true;
+		}
+		
+		if(!foundAP){
+			//Reset connected
+			for(int i=0;i<n;i++){
+				aux=listAPs->giveAP(i);
+				aux->connected=false;
+			}		
+		}
+		
+		bool canConnect=false;
+		
+		for(int i=0;i<n && !canConnect;i++){
+			aux=listAPs->giveAP(i);
+			if(!aux->connected && 0==ESP8266TrueRandom.random(aux->rate))
+				canConnect=true;
 		}		
-	}
-	SingletonStats::instance()->n_sleeps++;	
-	return false;
-}
-
-void SchedulerNode::advise(){
-	next_time_receive_ms=millis()+period_ms;
-	alarm_of_receive.once_ms(period_ms,int_to_cero,&signal_of_receive);				
-	node.modeCatchDataMessages(time_of_receive_ms,&_messages);
-	time_of_receive_ms=min_time_ms+random(random_more_time_s)*1000;
-	signal_of_receive=1;	
-}
-
-void SchedulerNode::scan(){
+		
+		if(canConnect){
+			send=true;
+			time_sending=DURATION_SEND_MS;		
+			ssid_to_send=aux->ssid;
+			time_sending=0;
+			time_setup_next_send_ms=time_now();		
+			next_time_send_ms=aux->period_s-((time_now()-aux->time_saw)%aux->period_s);
+			Serial.print("Milisegundos para enviar:");
+			Serial.println(next_time_send_ms);			
+		}
+		else{
+			send=false;
+		}
 			
-			unsigned long time_of_scan=min(substract(total_time_scanning,total_time_scanned),substract(next_time_receive_ms,millis()));
-			if(time_of_scan!=0){
-				total_time_scanned+=time_of_scan;				
-				node.scan(time_of_scan,&_messages,min_time_ms+random_more_time_s*1000,min_time_ms);
-			}	
-			else{
-				SingletonStats::instance()->n_scanned++;								
-				scanning=false;
-			}	
+	}
 }
 
-void SchedulerNode::send(){
+unsigned long SchedulerNode::calculate_period(){
+	int number_tasks;
+	unsigned long amount_ms;
 
-				unsigned long duration=min(duration_send_ms,substract(next_time_receive_ms,millis()));
-				if(duration!=0 && _messages.isLostConnectionWithAP()==false){
-					if(duration!=duration_send_ms)//send interrupted for advise
-						duration_send_ms=substract(duration_send_ms,time_of_receive_ms);
-					duration_send_ms=substract(duration_send_ms,duration);
-					node.trySendMessages(duration,&_messages,ssid_to_send);					
-				}
-				else{
-					waiting_for_send=false;
-					signal_of_send=1;	
-				}
-}				
-
-
- void SchedulerNode::do_run(){
-	switch(state){
-		case 1://Receive messages period	
-				advise();
-				stateMachine();
-				DEBUG_MSG("state %i\n", state);
-		break;
-		case 2:
-			scan();
-			stateMachine();
-		break;
-		case 3:
-			
-			if(prepare_scanning()){
-				
-			}
-			else{
-				if(process_messages()){
-					//process maybe duplicate
-					//process_message_stamp
-					//generatePub					
-					//sub
-					//process_eliminate							
-				}
-				else{
-					if(prepare_send()){
-						//generateNextTimeSend
-					}				
-					else{
-						DEBUG_MSG("Dormir tras ...");
-						state=5;
-					}					
-				}
-				}			
-			stateMachine();
-		break;
-		case 4:
-			send();
-			stateMachine();		
-		break;
-		case 5:
-			//sleep
-			stateMachine();
-		break;
+	amount_ms=more_random_time_advise_ms+duration_advise_ms;
+	if(tasks!=NULL){
+		number_tasks=tasks->size();
+		for(int i=0;i<number_tasks;i++){
+			amount_ms+=tasks->get(i)->duration_ms;
+		}
 	}
- }
+	unsigned long ms=snorlax_min(MAX_PERIOD_MS,snorlax_max(MIN_PERIOD_MS,amount_ms));
+	Serial.print("Milisegundos del periodo");
+	Serial.println(ms);
+	return ms;
+}
+
+unsigned long SchedulerNode::time_now(){
+	return total_time+millis();
+}
+
+bool SchedulerNode::time_of_advise(){
+	return time_now()-time_setup_next_advise_ms>=period_ms;
+}
+
+void SchedulerNode::set_APs(APs *_listAPs){
+	listAPs=_listAPs;
+}
+
+void SchedulerNode::set_messageBroker(messageBroker * _messages){
+	messages=_messages;
+}
+
+void SchedulerNode::set_node(broadcastNode * _node){
+	node=_node;
+}
+
+void SchedulerNode::set_tasks(LinkedList<Task*> *_tasks){
+	tasks=_tasks;
+}
+
+
+void SchedulerNode::Init(){
+	state=SETUP;
+	more_random_time_advise_ms=DURATION_RANDOM_TIME_ADVISE_MS;
+	duration_advise_ms=DURATION_ADVISE_MS;
+	duration_scan_ms=DURATION_SCAN_MS;
+	duration_send_ms=DURATION_SEND_MS;
+	period_ms=calculate_period();
+	String ssid;
+	node->getSSID(ssid);
+	ssid+=String("S")+String(period_ms/1000);
+	node->setSSID(ssid);
+	send=false;
+	scan=false;
+	lostConnection=false;
+	connectedToServer=false;	
+	iterator_task=0;
+}

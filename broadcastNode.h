@@ -1,52 +1,55 @@
 #ifndef __BROADCASTNODE_H__
 #define __BROADCASTNODE_H__
 
-#include "messageBroker.h"
-
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
 #include <WiFiServer.h>
-#include <Ticker.h>
-
+#include <WiFiClient.h>
+#include <Arduino.h>
+#include <LinkedList.h>
 
 #define SSID_PREFIX      		"BN"
-#define SSID_PREFIX_SERVICE     "BNS"
 #define SERVER_IP_ADDR			"192.168.4.1"
 #define SERVER_IP_NET           "192.168.4."
 #define SERVER_PORT				 4005
-#define DEBUG             		1
-#include "SingletonStats.h"
 
 class broadcastNode{
 
 private:
 
-  uint32_t _chip_id;
+	String ssid;
+	uint32_t chip_id;
 
-  //void createSchedule(unsigned long pointTime,unsigned long next_time_receive,unsigned long duration_time_receive,unsigned long period_receive,String &sJSON);
-	WiFiClient _client;
-	WiFiServer _server;
-
+	WiFiClient client;
+	LinkedList<WiFiClient *> clients_connected;
+	int index_client_connected;
+	WiFiServer server;
 
 public:
-  unsigned long sent;
-  unsigned long received;
-  bool pub;
-  String _ssid;
-
+  
   broadcastNode();
-  void scan(unsigned long duration_ms,messageBroker * messages,unsigned long max_range,unsigned long min_range);
- void createRate(String &sJson);
- 
-  void trySendMessages(unsigned long duration,messageBroker * messages,String &ssid); 
-  /*void searchNewNode(unsigned long duration,messageBroker * messages,unsigned long next_time_receive,unsigned long duration_time_receive,unsigned long period_receive);
-
-  */
-  void modeCatchDataMessages(unsigned long duration,messageBroker *messages);  
+  
+  void upWiFi();
+  void downWiFi();
+  
+  void modeAp();
+  
+  void initServer();
+  bool readMessage(String &msg);
+bool addNewClientConnection();  
+void clearServer();
+  void closingServer();
+  
+  int scan(LinkedList<String> &APs_filtered);
+  void getSSID(String &_ssid);
+  void setSSID(String &_ssid);
   
   
-
-
+  void tryConnect(String &_ssid);
+  bool Connected();
+  void InitClient();
+  void stopClient();
+  bool connectedToServer();
+  void sendToServer(String &_msg);
 };
 
 #endif
