@@ -10,6 +10,7 @@ SnorlaxMesh::SnorlaxMesh(){
 	listTasks.add(new tReadRateMessage(&messages,&listAPs));
 	listTasks.add(new tGenerateStatsMessage(&messages,&node));
 	listTasks.add(new tReadStatsMessage(&messages));	
+	listTasks.add(new tUGenerateAcelerometer(&messages,&node));
 	//listTasks.add(new tUGenerateMessage(&messages,&node));
 	scheduler.set_tasks(&listTasks);
 	scheduler.Init();	

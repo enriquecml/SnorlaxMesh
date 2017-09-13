@@ -11,6 +11,7 @@
 #include "tReadStatsMessage.h"
 
 #include "tUGenerateMessage.h"
+#include "tUGenerateAcelerometer.h"
 class SnorlaxMesh{
 
 private:
