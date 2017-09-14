@@ -10,12 +10,6 @@
 //Direccion I2C de la IMU
 #define MPU 0x68
  
-//Ratios de conversion
-#define A_R 16384.0
-#define G_R 131.0
- 
-//Conversion de radianes a grados 180/PI
-#define RAD_A_DEG = 57.295779
 
 class tUGenerateAcelerometer: public Task{
 
@@ -24,6 +18,7 @@ public:
 	void execute();
 private:
 
+	unsigned long last_time;
 	unsigned long own_sequence;	
 	messageBroker * messages;	
 	broadcastNode *node;

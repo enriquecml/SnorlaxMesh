@@ -4,6 +4,7 @@
 #include "Task.h"
 #include <ArduinoJson.h>
 #include "messageBroker.h"
+#include "broadcastNode.h"
 
 #define DEBUG_SNORLAX_READSTATSMESSAGE 1
 #ifdef  DEBUG_SNORLAX_READSTATSMESSAGE
@@ -13,12 +14,14 @@
 class tReadStatsMessage: public Task{
 
 public:
-	tReadStatsMessage(messageBroker * _messages);
+	tReadStatsMessage(messageBroker * _messages,broadcastNode *_node);
 	void execute();
 private:
 	unsigned long own_sequence;
-	bool isMessageStats(String &_msg);	
-	messageBroker * messages;	
+	bool isMessageStats(String &_msg);
+	bool sendToCloud(String &sJson);
+	messageBroker * messages;
+	broadcastNode * node;
 
 };
 #endif
